@@ -141,9 +141,9 @@ function ChatLayout() {
 				prefetchSessionEvents: handlePrefetchSessionEvents,
 			}}
 		>
-			<div className="flex h-[100dvh] overflow-hidden bg-background text-foreground md:h-screen">
+			<div className="app-shell flex h-[100dvh] min-h-0 overflow-hidden bg-background text-foreground md:h-screen">
 				{/* Desktop sidebar (md+) */}
-				<div className="hidden w-72 shrink-0 border-r border-border/70 bg-surface-1 md:block">
+				<div className="hidden shrink-0 border-r border-border/70 bg-surface-1 md:block md:w-[clamp(16rem,24vw,21rem)]">
 					<SessionSidebar
 						sessionsCollection={sessionsCollection}
 						onSelectSession={handleSelectSession}
@@ -172,7 +172,7 @@ function ChatLayout() {
 				</Sheet>
 
 				{/* Single routed child subtree */}
-				<div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+				<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
 					<Outlet />
 				</div>
 			</div>

@@ -42,17 +42,19 @@ export function ToolCall({ tool }: ToolCallProps) {
 			<button
 				type="button"
 				onClick={() => setExpanded(!expanded)}
-				className="flex w-full items-center gap-2 px-3 py-3 text-left hover:bg-surface-2 press-scale sm:py-2.5"
+				className="flex w-full flex-wrap items-center gap-2 px-3 py-3 text-left hover:bg-surface-2 press-scale sm:py-2.5"
 			>
 				<StatusIndicator status={tool.status} />
-				<span className="font-medium">{info.title}</span>
+				<span className="font-medium [overflow-wrap:anywhere]">
+					{info.title}
+				</span>
 				{info.subtitle && (
-					<span className="min-w-0 truncate text-muted-foreground">
+					<span className="min-w-0 truncate text-muted-foreground [overflow-wrap:anywhere]">
 						{info.subtitle}
 					</span>
 				)}
 				{tool.title && (
-					<span className="min-w-0 truncate text-muted-foreground">
+					<span className="min-w-0 truncate text-muted-foreground [overflow-wrap:anywhere]">
 						{tool.title}
 					</span>
 				)}
@@ -78,7 +80,7 @@ export function ToolCall({ tool }: ToolCallProps) {
 								<div className="mb-1 font-medium text-muted-foreground">
 									Input
 								</div>
-								<pre className="max-h-60 overflow-auto whitespace-pre-wrap rounded-lg bg-background p-2 font-mono text-xs sm:max-h-40 sm:text-[11px]">
+								<pre className="max-h-60 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-background p-2 font-mono text-xs sm:max-h-40 sm:text-[11px]">
 									{JSON.stringify(tool.input, null, 2)}
 								</pre>
 							</div>
@@ -89,7 +91,7 @@ export function ToolCall({ tool }: ToolCallProps) {
 								<div className="mb-1 font-medium text-muted-foreground">
 									Output
 								</div>
-								<pre className="max-h-60 overflow-auto whitespace-pre-wrap rounded-lg bg-background p-2 font-mono text-xs sm:max-h-40 sm:text-[11px]">
+								<pre className="max-h-60 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-background p-2 font-mono text-xs sm:max-h-40 sm:text-[11px]">
 									{tool.output}
 								</pre>
 							</div>
@@ -100,7 +102,7 @@ export function ToolCall({ tool }: ToolCallProps) {
 								<div className="mb-1 font-medium text-red-600 dark:text-red-400">
 									Error
 								</div>
-								<pre className="max-h-60 overflow-auto whitespace-pre-wrap rounded-lg bg-red-50 p-2 font-mono text-xs dark:bg-red-950 sm:max-h-40 sm:text-[11px]">
+								<pre className="max-h-60 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-red-50 p-2 font-mono text-xs dark:bg-red-950 sm:max-h-40 sm:text-[11px]">
 									{tool.error}
 								</pre>
 							</div>
@@ -111,7 +113,7 @@ export function ToolCall({ tool }: ToolCallProps) {
 								<div className="mb-1 font-medium text-muted-foreground">
 									Subagent response
 								</div>
-								<div className="max-h-60 overflow-auto whitespace-pre-wrap rounded-lg bg-background p-2 text-xs sm:max-h-40 sm:text-[11px]">
+								<div className="max-h-60 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-background p-2 text-xs sm:max-h-40 sm:text-[11px]">
 									{tool.childText}
 								</div>
 							</div>

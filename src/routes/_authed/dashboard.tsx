@@ -156,10 +156,10 @@ function DashboardPage() {
 	const { user, hasGitHubToken } = data;
 
 	return (
-		<div className="min-h-screen bg-background text-foreground">
+		<div className="app-shell bg-background text-foreground">
 			<AppHeader variant="authed" />
 
-			<main className="mx-auto max-w-3xl px-4 py-8 sm:py-10">
+			<main className="app-container max-w-3xl py-8 sm:py-10">
 				<h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
 
 				<div className="mt-6 rounded-xl border border-border/80 bg-surface-1 p-5 sm:p-6">
@@ -227,10 +227,10 @@ function DashboardPage() {
 
 				<div className="mt-4 rounded-xl border border-border/80 bg-surface-1 p-5 sm:p-6">
 					<h2 className="font-semibold">Quick Actions</h2>
-					<div className="mt-4 flex gap-3">
+					<div className="mt-4 flex flex-wrap gap-3">
 						<Link
 							to="/chat"
-							className="rounded-md bg-foreground px-4 py-3 text-sm font-medium text-background hover:opacity-90 press-scale"
+							className="min-h-[44px] w-full rounded-md bg-foreground px-4 py-3 text-center text-sm font-medium text-background hover:opacity-90 press-scale sm:w-auto"
 						>
 							Open Chat →
 						</Link>
@@ -287,7 +287,7 @@ function DashboardPage() {
 												</span>
 											</div>
 
-											<div className="mt-3 flex flex-col gap-2 sm:flex-row">
+											<div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-stretch">
 												<input
 													type="password"
 													placeholder={`Enter ${providerLabels[provider]} API key`}
@@ -301,12 +301,12 @@ function DashboardPage() {
 													className="h-11 flex-1 rounded-md border border-border bg-background/70 px-3 text-sm outline-none focus:border-ring"
 													disabled={isSaving}
 												/>
-												<div className="flex gap-2">
+												<div className="flex flex-wrap gap-2 sm:flex-nowrap">
 													<button
 														type="button"
 														onClick={() => handleSaveKey(provider)}
 														disabled={!drafts[provider].trim() || isSaving}
-														className="rounded-md bg-foreground px-3 py-2.5 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50"
+														className="min-h-[44px] rounded-md bg-foreground px-3 py-2.5 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50"
 													>
 														{isSaving ? "Saving..." : "Save"}
 													</button>
@@ -314,7 +314,7 @@ function DashboardPage() {
 														type="button"
 														onClick={() => handleDeleteKey(provider)}
 														disabled={!status?.configured || isSaving}
-														className="rounded-md border border-border bg-background/70 px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted disabled:opacity-50"
+														className="min-h-[44px] rounded-md border border-border bg-background/70 px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted disabled:opacity-50"
 													>
 														Remove
 													</button>

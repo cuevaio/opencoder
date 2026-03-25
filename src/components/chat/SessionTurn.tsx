@@ -32,7 +32,7 @@ export function SessionTurn({
 		<div className="space-y-4" onSubmitCapture={handleSubmitCapture}>
 			{/* User prompt */}
 			<div className="flex justify-end">
-				<div className="max-w-[92%] rounded-xl bg-foreground px-3.5 py-3 text-sm leading-relaxed text-background shadow-xs sm:max-w-[80%]">
+				<div className="max-w-[95%] rounded-xl bg-foreground px-3.5 py-3 text-sm leading-relaxed text-background shadow-xs [overflow-wrap:anywhere] sm:max-w-[82%]">
 					{turn.prompt}
 				</div>
 			</div>
@@ -65,7 +65,7 @@ function TurnItem({
 	switch (item.type) {
 		case "text-block":
 			return (
-				<div className="text-sm">
+				<div className="markdown-safe text-sm">
 					<MarkdownRenderer content={item.text} />
 				</div>
 			);

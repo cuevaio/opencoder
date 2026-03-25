@@ -71,7 +71,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 	);
 
 	return (
-		<div className="prose prose-sm dark:prose-invert max-w-none prose-pre:bg-bg-surface prose-pre:text-xs prose-code:text-xs prose-code:before:content-none prose-code:after:content-none">
+		<div className="markdown-safe prose prose-sm max-w-none dark:prose-invert prose-pre:bg-surface-1 prose-pre:text-xs prose-code:text-xs prose-code:before:content-none prose-code:after:content-none [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto">
 			<ReactMarkdown
 				remarkPlugins={[remarkGfm]}
 				rehypePlugins={[rehypeRaw]}

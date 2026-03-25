@@ -11,12 +11,12 @@ function HomePage() {
 	const variant = session ? "authed" : "public";
 
 	return (
-		<div className="flex min-h-screen flex-col bg-background text-foreground">
+		<div className="app-shell flex flex-col bg-background text-foreground">
 			<AppHeader variant={variant} />
 
 			{/* Hero */}
-			<main className="flex flex-1 flex-col items-center justify-center px-4 py-16 text-center sm:py-20">
-				<h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
+			<main className="app-container flex flex-1 flex-col items-center justify-center py-14 text-center sm:py-20">
+				<h1 className="text-display-fluid font-bold tracking-tight">
 					OpenCoder
 				</h1>
 				<p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
@@ -82,8 +82,10 @@ function HomePage() {
 			</main>
 
 			{/* Footer */}
-			<footer className="border-t border-border/80 bg-background/70 py-6 text-center text-xs text-muted-foreground">
-				OpenCoder — built with TanStack Start, Electric SQL, and Trigger.dev
+			<footer className="border-t border-border/80 bg-background/70 py-6 text-xs text-muted-foreground">
+				<div className="app-container text-center">
+					OpenCoder — built with TanStack Start, Electric SQL, and Trigger.dev
+				</div>
 			</footer>
 		</div>
 	);

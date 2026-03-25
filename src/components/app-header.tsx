@@ -25,7 +25,7 @@ export function AppHeader({ variant = "public" }: AppHeaderProps) {
 
 	return (
 		<header className="border-b border-border/80 bg-background/90 pt-safe backdrop-blur-sm">
-			<div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
+			<div className="app-container flex h-16 items-center justify-between">
 				{/* Logo */}
 				<Link
 					to="/"

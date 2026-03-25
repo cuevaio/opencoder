@@ -36,7 +36,7 @@ export function SessionSidebar({
 	);
 
 	return (
-		<div className="flex h-full flex-col border-r border-border/70 bg-surface-1">
+		<div className="flex h-full min-h-0 flex-col border-r border-border/70 bg-surface-1">
 			{/* Sidebar header */}
 			<div className="flex items-center justify-between border-b border-border/80 px-4 py-3">
 				<span className="text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
@@ -54,7 +54,7 @@ export function SessionSidebar({
 			</div>
 
 			{/* Session list */}
-			<div className="flex-1 overflow-y-auto">
+			<div className="scroll-region flex-1">
 				{isLoading && (
 					<div className="px-4 py-4 text-xs text-muted-foreground">
 						Loading...

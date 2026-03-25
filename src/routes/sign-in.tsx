@@ -18,8 +18,8 @@ function SignInPage() {
 	if (session) return null;
 
 	return (
-		<div className="flex min-h-screen items-center justify-center px-4 py-10">
-			<div className="surface-panel w-full max-w-sm space-y-6 p-6">
+		<div className="app-shell flex items-center justify-center px-[var(--page-gutter)] py-8 pb-safe pt-safe">
+			<div className="surface-panel w-full max-w-sm space-y-6 p-5 sm:p-6">
 				<div className="text-center">
 					<h1 className="text-2xl font-bold tracking-tight">
 						Sign in to OpenCoder

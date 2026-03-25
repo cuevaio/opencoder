@@ -57,7 +57,7 @@ function ChatSessionPage() {
 
 	if (!sessionId || Number.isNaN(sessionId)) {
 		return (
-			<div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+			<div className="app-container flex h-full items-center justify-center py-8 text-sm text-muted-foreground">
 				Invalid session ID
 			</div>
 		);

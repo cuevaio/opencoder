@@ -173,7 +173,7 @@ export function ChatView({
 			: "Session sync is taking longer than expected.";
 
 		return (
-			<div className="flex h-full flex-col">
+			<div className="flex h-full min-h-0 flex-col">
 				<div className="flex items-center justify-between border-b border-border px-3 py-3 sm:px-4">
 					<div className="flex items-center gap-2">
 						{/* Sidebar toggle placeholder */}
@@ -237,9 +237,9 @@ export function ChatView({
 		(showSlowLoadFallback || Boolean(sessionsSyncError));
 
 	return (
-		<div className="flex h-full flex-col bg-background">
+		<div className="flex h-full min-h-0 flex-col bg-background">
 			{/* Header bar */}
-			<div className="flex items-center justify-between border-b border-border/80 bg-background/90 px-3 py-3 pt-safe backdrop-blur-sm sm:px-4">
+			<div className="flex min-h-12 items-center justify-between border-b border-border/80 bg-background/90 px-[var(--page-gutter)] py-2 pt-safe backdrop-blur-sm">
 				<div className="flex min-w-0 items-center gap-2">
 					{/* Mobile sidebar toggle */}
 					<button
@@ -251,7 +251,7 @@ export function ChatView({
 						<PanelLeftOpen className="h-5 w-5" />
 					</button>
 
-					<span className="max-w-[170px] truncate font-mono text-xs text-muted-foreground sm:max-w-none">
+					<span className="max-w-[45vw] truncate font-mono text-xs leading-none text-muted-foreground sm:max-w-[30rem]">
 						{repoDisplay}
 					</span>
 					{status && isWorking && (
@@ -274,7 +274,7 @@ export function ChatView({
 					<button
 						type="button"
 						onClick={onNewSession}
-						className="min-h-[44px] rounded-md border border-border bg-background/70 px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground press-scale"
+						className="inline-flex min-h-[44px] items-center rounded-md border border-border bg-background/70 px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground press-scale"
 					>
 						New session
 					</button>
@@ -285,9 +285,9 @@ export function ChatView({
 			{/* Scrollable chat area */}
 			<div
 				ref={scrollRef}
-				className="flex-1 overflow-y-auto px-3 py-5 sm:px-4 sm:py-6"
+				className="scroll-region flex-1 px-[var(--page-gutter)] py-5 sm:py-6"
 			>
-				<div className="mx-auto max-w-3xl space-y-7">
+				<div className="chat-container space-y-6 sm:space-y-7">
 					{turns.map((turn, i) => (
 						<SessionTurn
 							key={`turn-${turn.prompt.slice(0, 20)}-${i.toString()}`}
@@ -302,8 +302,8 @@ export function ChatView({
 			</div>
 
 			{/* Footer */}
-			<div className="border-t border-border/80 bg-background/90 px-3 py-2 pb-safe backdrop-blur-sm sm:px-4">
-				<div className="mx-auto max-w-3xl">
+			<div className="border-t border-border/80 bg-background/90 px-[var(--page-gutter)] py-2 pb-safe backdrop-blur-sm">
+				<div className="chat-container">
 					{shouldShowReconnectNotice && (
 						<div className="mb-2 rounded-lg border border-border bg-surface-2 px-3 py-2 text-xs text-muted-foreground">
 							{shouldShowInlineError
@@ -311,21 +311,6 @@ export function ChatView({
 								: "Reconnecting session updates..."}
 						</div>
 					)}
-					{isWorking && !pendingQuestion && (
-						<div className="mb-2 flex items-center justify-between rounded-lg border border-border/70 bg-surface-1 px-3 py-1.5">
-							<span className="text-xs text-muted-foreground">
-								Agent is working...
-							</span>
-							<button
-								type="button"
-								onClick={handleCancel}
-								className="min-h-[36px] rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 press-scale dark:text-red-400 dark:hover:bg-red-950"
-							>
-								Cancel
-							</button>
-						</div>
-					)}
-
 					{!pendingQuestion && (
 						<div className="space-y-1.5">
 							{isIdle && error && (
@@ -335,21 +320,15 @@ export function ChatView({
 							)}
 							<ChatFooter
 								onSubmit={onFollowup}
+								onCancel={handleCancel}
+								onEndSession={onNewSession}
+								isWorking={isWorking}
 								isSubmitting={isSubmitting}
-								disabled={!isIdle}
+								disabled={false}
 								defaultMode={defaultMode}
 								defaultModel={defaultModel}
 								placeholder="Send a follow-up message..."
 							/>
-							<div className="flex justify-end">
-								<button
-									type="button"
-									onClick={onNewSession}
-									className="min-h-[34px] rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground press-scale"
-								>
-									End session
-								</button>
-							</div>
 						</div>
 					)}
 				</div>

@@ -64,9 +64,9 @@ function NewSessionPage() {
 	);
 
 	return (
-		<div className="flex h-full flex-col">
+		<div className="flex h-full min-h-0 flex-col">
 			{/* Mobile header bar with sidebar toggle */}
-			<div className="flex items-center justify-between border-b border-border/80 bg-background/90 px-3 py-3 pt-safe backdrop-blur-sm md:hidden">
+			<div className="flex min-h-12 items-center justify-between border-b border-border/80 bg-background/90 px-[var(--page-gutter)] py-2 pt-safe backdrop-blur-sm md:hidden">
 				<div className="flex items-center gap-2">
 					<button
 						type="button"
@@ -76,15 +76,15 @@ function NewSessionPage() {
 					>
 						<PanelLeftOpen className="h-5 w-5" />
 					</button>
-					<span className="text-sm font-semibold tracking-tight text-foreground">
+					<span className="text-sm leading-none font-semibold tracking-tight text-foreground">
 						New Session
 					</span>
 				</div>
 				<ChatMobileMenu />
 			</div>
 
-			<main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-4 py-8 sm:py-12">
-				<div className="surface-panel p-5 sm:p-6">
+			<main className="app-container flex w-full min-h-0 flex-1 flex-col justify-center py-6 sm:py-10">
+				<div className="surface-panel mx-auto w-full max-w-3xl p-4 sm:p-6">
 					<h1 className="mb-2 text-2xl font-bold tracking-tight">
 						New Session
 					</h1>

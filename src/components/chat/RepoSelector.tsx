@@ -150,7 +150,7 @@ export function RepoSelector({
 				Repository
 			</label>
 
-			<div className="flex gap-2">
+			<div className="flex flex-col gap-2 sm:flex-row">
 				<Popover open={open} onOpenChange={setOpen}>
 					<PopoverTrigger asChild>
 						<Button
@@ -172,9 +172,12 @@ export function RepoSelector({
 						</Button>
 					</PopoverTrigger>
 					<PopoverContent
-						className="rounded-xl border border-border/80 p-0 shadow-md"
+						className="overlay-content rounded-xl border border-border/80 p-0 shadow-md"
 						align="start"
-						style={{ width: "var(--radix-popover-trigger-width)" }}
+						style={{
+							width:
+								"min(var(--radix-popover-trigger-width), var(--overlay-max-w))",
+						}}
 					>
 						<Command shouldFilter={false}>
 							<CommandInput
@@ -239,7 +242,7 @@ export function RepoSelector({
 				<Button
 					variant="outline"
 					size="icon"
-					className="h-11 w-11"
+					className="h-11 w-full shrink-0 sm:w-11"
 					onClick={handleRefresh}
 					disabled={isFetching || disabled}
 					title="Refresh repositories"
