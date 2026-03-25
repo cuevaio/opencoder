@@ -1,4 +1,4 @@
-import type { FormEvent as ReactFormEvent } from "react";
+import type { FormEvent as ReactFormEvent, ReactNode } from "react";
 import { useCallback } from "react";
 import type { DisplayItem, Turn } from "#/lib/display-items";
 import { MarkdownRenderer } from "./MarkdownRenderer";
@@ -10,6 +10,7 @@ interface SessionTurnProps {
 	pendingQuestion: (DisplayItem & { type: "question-asked" }) | null;
 	completedTokens: Set<string>;
 	onAnswer: (tokenId: string, answers: string[][]) => void;
+	bottomAction?: ReactNode;
 }
 
 export function SessionTurn({
@@ -17,6 +18,7 @@ export function SessionTurn({
 	pendingQuestion,
 	completedTokens,
 	onAnswer,
+	bottomAction,
 }: SessionTurnProps) {
 	const handleSubmitCapture = useCallback(
 		(event: ReactFormEvent<HTMLDivElement>) => {
@@ -47,6 +49,8 @@ export function SessionTurn({
 					onAnswer={onAnswer}
 				/>
 			))}
+
+			{bottomAction ? <div>{bottomAction}</div> : null}
 		</div>
 	);
 }

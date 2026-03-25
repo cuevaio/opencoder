@@ -12,8 +12,7 @@ import {
 } from "../ui/select.tsx";
 import { Textarea } from "../ui/textarea.tsx";
 
-const GIT_BRANCH_COMMIT_PUSH_PROMPT =
-	"Create a new branch for the current changes, commit with a clear conventional message, and push to origin with upstream tracking. Check git status/diff/log first, do not force push, and do not include secrets.";
+const CREATE_PR_PROMPT = "create pr";
 
 interface ChatFooterProps {
 	onSubmit: (text: string, mode: "plan" | "build", model: string) => void;
@@ -55,9 +54,9 @@ export function ChatFooter({
 		setText("");
 	}, [text, mode, model, isSubmitting, disabled, isWorking, onSubmit]);
 
-	const handleGitSubmit = useCallback(() => {
+	const handleCreatePrSubmit = useCallback(() => {
 		if (isSubmitting || disabled || isWorking) return;
-		onSubmit(GIT_BRANCH_COMMIT_PUSH_PROMPT, mode, model);
+		onSubmit(CREATE_PR_PROMPT, mode, model);
 		setAdvancedOpen(false);
 	}, [mode, model, isSubmitting, disabled, isWorking, onSubmit]);
 
@@ -166,12 +165,12 @@ export function ChatFooter({
 
 							<Button
 								type="button"
-								onClick={handleGitSubmit}
+								onClick={handleCreatePrSubmit}
 								disabled={isSubmitting || disabled || isWorking}
 								variant="outline"
 								className="h-10 w-full px-2 text-[11px]"
 							>
-								Git: Branch + Commit + Push
+								Create PR
 							</Button>
 
 							{onEndSession && (

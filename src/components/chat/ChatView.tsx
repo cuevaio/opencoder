@@ -17,9 +17,13 @@ import {
 	type SessionEventRow,
 } from "#/lib/session-converter";
 import { useChatLayoutContext } from "#/routes/_authed/chat.tsx";
+import { Button } from "../ui/button.tsx";
 import { ChatFooter } from "./ChatFooter";
 import { ChatMobileMenu } from "./ChatMobileMenu";
 import { SessionTurn } from "./SessionTurn";
+
+const CREATE_PR_PROMPT = "create pr";
+const UPDATE_PR_PROMPT = "update pr";
 
 interface ChatViewProps {
 	sessionId: number;
@@ -121,6 +125,39 @@ export function ChatView({
 		[initialPrompt, displayItems],
 	);
 	const status = useMemo(() => computeStatus(displayItems), [displayItems]);
+	const hasFileChanges = useMemo(
+		() =>
+			streamEvents.some(
+				(evt) => evt.type === "part-update" && evt.part.type === "file",
+			),
+		[streamEvents],
+	);
+	const hasExistingPr = useMemo(
+		() =>
+			streamEvents.some((evt) => {
+				if (evt.type !== "part-update" || evt.part.type !== "tool") {
+					return false;
+				}
+
+				const toolState = evt.part.state;
+				if (toolState.status !== "completed") {
+					return false;
+				}
+
+				if (evt.part.tool === "bash") {
+					const command =
+						typeof toolState.input?.command === "string"
+							? toolState.input.command
+							: "";
+					if (/\bgh\s+pr\s+(create|edit)\b/.test(command)) {
+						return true;
+					}
+				}
+
+				return /\/pull\/\d+/.test(toolState.output ?? "");
+			}),
+		[streamEvents],
+	);
 
 	const completedTokens = useMemo(() => new Set<string>(), []);
 	const pendingQuestion = useMemo(
@@ -225,6 +262,13 @@ export function ChatView({
 	const defaultModel =
 		(effectiveSessionRow.selected_model as string | undefined) ||
 		defaultModelId;
+	const handleCreateOrUpdatePr = () => {
+		onFollowup(
+			hasExistingPr ? UPDATE_PR_PROMPT : CREATE_PR_PROMPT,
+			defaultMode,
+			defaultModel,
+		);
+	};
 	const totalTokens = effectiveSessionRow.total_tokens as
 		| number
 		| null
@@ -295,6 +339,20 @@ export function ChatView({
 							pendingQuestion={pendingQuestion}
 							completedTokens={completedTokens}
 							onAnswer={handleAnswer}
+							bottomAction={
+								i === turns.length - 1 && hasFileChanges ? (
+									<Button
+										type="button"
+										onClick={handleCreateOrUpdatePr}
+										disabled={isWorking || isSubmitting}
+										variant="outline"
+										size="sm"
+										className="h-8"
+									>
+										{hasExistingPr ? "Update PR" : "Create PR"}
+									</Button>
+								) : null
+							}
 						/>
 					))}
 				</div>
