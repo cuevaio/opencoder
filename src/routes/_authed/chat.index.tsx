@@ -66,7 +66,7 @@ function NewSessionPage() {
 	return (
 		<div className="flex h-full min-h-0 flex-col">
 			{/* Mobile header bar with sidebar toggle */}
-			<div className="flex min-h-12 items-center justify-between border-b border-border/80 bg-background/90 px-[var(--page-gutter)] py-2 pt-safe backdrop-blur-sm md:hidden">
+			<div className="flex min-h-12 items-center justify-between border-b border-border/80 bg-background px-[var(--page-gutter)] py-2 pt-safe md:hidden">
 				<div className="flex items-center gap-2">
 					<button
 						type="button"

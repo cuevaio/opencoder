@@ -18,8 +18,13 @@ export function useMediaQuery(query: string): boolean {
 			setMatches(event.matches);
 		};
 
-		mediaQueryList.addEventListener("change", handler);
-		return () => mediaQueryList.removeEventListener("change", handler);
+		if (typeof mediaQueryList.addEventListener === "function") {
+			mediaQueryList.addEventListener("change", handler);
+			return () => mediaQueryList.removeEventListener("change", handler);
+		}
+
+		mediaQueryList.addListener(handler);
+		return () => mediaQueryList.removeListener(handler);
 	}, [query]);
 
 	return matches;

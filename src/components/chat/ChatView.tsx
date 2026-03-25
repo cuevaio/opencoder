@@ -239,7 +239,7 @@ export function ChatView({
 	return (
 		<div className="flex h-full min-h-0 flex-col bg-background">
 			{/* Header bar */}
-			<div className="flex min-h-12 items-center justify-between border-b border-border/80 bg-background/90 px-[var(--page-gutter)] py-2 pt-safe backdrop-blur-sm">
+			<div className="flex min-h-12 items-center justify-between border-b border-border/80 bg-background px-[var(--page-gutter)] py-2 pt-safe">
 				<div className="flex min-w-0 items-center gap-2">
 					{/* Mobile sidebar toggle */}
 					<button
@@ -302,7 +302,7 @@ export function ChatView({
 			</div>
 
 			{/* Footer */}
-			<div className="border-t border-border/80 bg-background/90 px-[var(--page-gutter)] py-2 pb-safe backdrop-blur-sm">
+			<div className="border-t border-border/80 bg-background px-[var(--page-gutter)] py-2 pb-safe">
 				<div className="chat-container">
 					{shouldShowReconnectNotice && (
 						<div className="mb-2 rounded-lg border border-border bg-surface-2 px-3 py-2 text-xs text-muted-foreground">

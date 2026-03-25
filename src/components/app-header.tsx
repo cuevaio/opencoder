@@ -1,8 +1,9 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Menu, X } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { ThemeToggle } from "#/components/theme-toggle.tsx";
 import { authClient } from "#/lib/auth-client.ts";
+import type { Theme } from "#/lib/theme.ts";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "./ui/sheet.tsx";
 
 interface AppHeaderProps {
@@ -24,8 +25,18 @@ export function AppHeader({ variant = "public" }: AppHeaderProps) {
 		});
 	};
 
+	const handleThemeChangeFromMobileMenu = useCallback(
+		(_nextTheme: Theme, applyTheme: () => void) => {
+			setMobileMenuOpen(false);
+			window.requestAnimationFrame(() => {
+				applyTheme();
+			});
+		},
+		[],
+	);
+
 	return (
-		<header className="border-b border-border/80 bg-background/90 pt-safe backdrop-blur-sm">
+		<header className="border-b border-border/80 bg-background pt-safe">
 			<div className="app-container flex h-16 items-center justify-between">
 				{/* Logo */}
 				<Link
@@ -102,7 +113,10 @@ export function AppHeader({ variant = "public" }: AppHeaderProps) {
 
 					<nav className="flex flex-col gap-1 p-3">
 						<div className="mb-1 flex min-h-[48px] items-center rounded-lg bg-surface-1 px-4 py-3">
-							<ThemeToggle showLabel />
+							<ThemeToggle
+								showLabel
+								onThemeChange={handleThemeChangeFromMobileMenu}
+							/>
 						</div>
 						{variant === "authed" ? (
 							<>

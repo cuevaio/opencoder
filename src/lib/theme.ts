@@ -41,7 +41,12 @@ export function applyThemeToDocument(theme: Theme): void {
 		return;
 	}
 
-	document.documentElement.classList.toggle("dark", theme === "dark");
+	const shouldUseDark = theme === "dark";
+	if (document.documentElement.classList.contains("dark") === shouldUseDark) {
+		return;
+	}
+
+	document.documentElement.classList.toggle("dark", shouldUseDark);
 }
 
 export function persistTheme(theme: Theme): void {

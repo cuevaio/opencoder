@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Menu, X } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { ThemeToggle } from "#/components/theme-toggle.tsx";
 import {
 	Sheet,
@@ -9,6 +9,7 @@ import {
 	SheetTitle,
 } from "#/components/ui/sheet.tsx";
 import { authClient } from "#/lib/auth-client.ts";
+import type { Theme } from "#/lib/theme.ts";
 
 export function ChatMobileMenu() {
 	const [open, setOpen] = useState(false);
@@ -23,6 +24,16 @@ export function ChatMobileMenu() {
 			},
 		});
 	};
+
+	const handleThemeChange = useCallback(
+		(_nextTheme: Theme, applyTheme: () => void) => {
+			setOpen(false);
+			window.requestAnimationFrame(() => {
+				applyTheme();
+			});
+		},
+		[],
+	);
 
 	return (
 		<>
@@ -55,7 +66,7 @@ export function ChatMobileMenu() {
 
 					<nav className="flex flex-col gap-1 p-3">
 						<div className="mb-1 flex min-h-[48px] items-center rounded-lg bg-surface-1 px-4 py-3">
-							<ThemeToggle showLabel />
+							<ThemeToggle showLabel onThemeChange={handleThemeChange} />
 						</div>
 						<Link
 							to="/"
