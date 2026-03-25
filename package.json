@@ -80,10 +80,5 @@
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.0.5"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "lightningcss"
-    ]
-  }
+  "packageManager": "bun@1.2.21"
 }

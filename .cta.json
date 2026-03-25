@@ -2,7 +2,7 @@
   "projectName": "opencoder",
   "mode": "file-router",
   "typescript": true,
-  "packageManager": "npm",
+  "packageManager": "bun",
   "includeExamples": true,
   "tailwind": true,
   "addOnOptions": {
