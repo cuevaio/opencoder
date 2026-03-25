@@ -1,176 +1,161 @@
-# AGENTS.md — OpenCoder
+# AGENTS.md — opencoder
 
-OpenCoder is a web app that runs an AI coding agent on any GitHub repository from
-the browser. Users authenticate via GitHub OAuth, pick a repo, describe a task, and
-a cloud-hosted agent (OpenCode + Claude) streams results back in real time.
+This repository is built and maintained with OpenCode workflows.
+Use OpenCode-oriented instructions and avoid Cursor- or Claude-Code-specific assumptions.
 
-## Stack
+## Project Summary
 
-- **Framework**: TanStack Start (React 19 SSR) + TanStack Router (file-based routing)
-- **Realtime sync**: Electric SQL → TanStack DB (Postgres logical replication to browser)
-- **Background tasks**: Trigger.dev (long-running agent sessions, up to 1 hour)
-- **AI agent**: OpenCode SDK (wraps Claude via Vercel AI Gateway)
-- **Auth**: Better Auth with GitHub OAuth
-- **Database**: PostgreSQL (Neon) + Drizzle ORM
-- **Styling**: Tailwind CSS v4 + shadcn/ui (New York style, Zinc base, Lucide icons)
-- **Validation**: Zod v4
+opencoder is a web app that runs AI coding sessions against GitHub repositories.
+Users authenticate with GitHub, select a repo, start a task, and stream results in real time.
+
+Core stack:
+- TanStack Start + TanStack Router (file-based routing, React 19 SSR)
+- Trigger.dev for long-running background sessions
+- OpenCode SDK for agent execution
+- Better Auth (GitHub OAuth)
+- Drizzle ORM + PostgreSQL (Neon)
+- Electric SQL + TanStack DB collections for realtime sync
+- Tailwind CSS v4 + shadcn/ui
+- Zod for validation
+
+## Tooling and Package Manager
+
+- Package manager/runtime: Bun (`bun.lock` is present)
+- Build tool: Vite
+- Lint/format: Biome
+- Tests: Vitest (`jsdom` environment)
+- Migrations: Drizzle Kit
+
+Prefer Bun commands in docs, scripts, and agent instructions.
 
 ## Build / Lint / Test Commands
 
+Use these from repo root:
+
 ```bash
-npm run dev              # Vite dev server on port 3000
-npm run build            # Production build
-npm run check            # Biome check (lint + format combined)
-npm run lint             # Biome lint only
-npm run format           # Biome format only
-npm run test             # vitest run (all tests)
-npx vitest run path/to/file.test.ts          # Run a single test file
-npx vitest run -t "test name"                # Run a single test by name
-npm run db:generate      # Generate Drizzle migrations
-npm run db:migrate       # Run Drizzle migrations
-npm run db:push          # Push schema directly to database
+bun install
+bun run dev
+bun run build
+bun run preview
+
+bun run check
+bun run lint
+bun run format
+
+bun run test
+bun run test -- src/path/to/file.test.ts
+bunx vitest run src/path/to/file.test.ts
+bunx vitest run -t "test name"
+
+bun run db:generate
+bun run db:migrate
+bun run db:push
+bun run db:pull
+bun run db:studio
 ```
 
-Always run `npm run check` before committing. It enforces both lint rules and
-formatting in a single pass.
+Notes:
+- `bun run test -- <file>` is the default single-test-file command.
+- `bunx vitest run -t "..."` is the fastest way to target one test by name.
+- Run `bun run check` before opening a PR.
 
-## Commit Policy
+## Commit and Plan Policy
 
-Every commit **must** include its corresponding OpenCode plan. Before committing,
-create a plan using `opencode plan` that describes the changes, then reference it
-in the commit. Do not make commits without an associated plan.
+- If an OpenCode plan exists for the work, include it in the commit context/message.
+- For non-trivial changes, create/update a plan first using OpenCode tooling.
+- Do not commit generated noise unrelated to the task.
+- Keep commits focused and descriptive.
 
-## Code Style
+## Code Style Rules
 
-### Formatter & Linter — Biome (sole tool, no Prettier/ESLint)
+### Formatting and Linting
 
-- **Indent**: Tabs (not spaces)
-- **Quotes**: Double quotes for JS/TS
-- **Linter rules**: Biome `recommended` ruleset
-- **Import ordering**: Automatic via Biome `organizeImports`
-- Biome scope: `src/**/*`, `.vscode/**/*`, `index.html`, `vite.config.ts`
-- Excluded from Biome: `src/routeTree.gen.ts` (auto-generated), `src/styles.css`
+- Biome is the single formatter/linter (no Prettier/ESLint).
+- Indentation: tabs.
+- JS/TS quote style: double quotes.
+- Import ordering: rely on Biome organize imports.
+- Biome includes:
+  - `src/**/*`
+  - `.vscode/**/*`
+  - `index.html`
+  - `vite.config.ts`
+- Biome excludes:
+  - `src/routeTree.gen.ts` (generated)
+  - `src/styles.css`
 
-### TypeScript Configuration
+### TypeScript
 
-- `strict: true` with `noUnusedLocals`, `noUnusedParameters`
-- `verbatimModuleSyntax: true` — use `import type { ... }` for type-only imports
-- `target: ES2022`, bundler module resolution
-- `.ts` extensions are allowed in import specifiers
+- `strict: true` with `noUnusedLocals` and `noUnusedParameters`.
+- `verbatimModuleSyntax: true`.
+- `moduleResolution: "bundler"`.
+- `allowImportingTsExtensions: true`.
+- Prefer explicit, narrow types at boundaries (API payloads, DB writes, task inputs).
 
-### Import Conventions
+### Imports
 
-Biome auto-sorts imports. Follow this general grouping:
+Use this ordering pattern:
+1. Node built-ins (`node:*`)
+2. Third-party libraries
+3. Internal aliases (`#/...`)
+4. Relative imports
 
-1. Node built-ins (`import { rmSync } from "node:fs"`)
-2. Third-party packages (`@tanstack/*`, `react`, `zod`, etc.)
-3. Internal via `#/` alias (`import { db } from "#/db/index.ts"`)
-4. Relative siblings (`import { ChatFooter } from "./ChatFooter"`)
-
-The `#/*` path alias maps to `./src/*` (configured in both `tsconfig.json` paths
-and `package.json` imports). Prefer `#/` over `@/` — both resolve identically but
-`#/` is the convention used throughout the codebase.
+Alias conventions:
+- `#/*` and `@/*` both map to `src/*`.
+- Prefer `#/` for consistency across this codebase.
 
 ### Naming Conventions
 
-| Element              | Convention     | Example                             |
-|----------------------|---------------|-------------------------------------|
-| Source files         | `kebab-case`  | `auth-helpers.ts`, `clone-repo.ts`  |
-| React components     | `PascalCase`  | `ChatView.tsx`, `RepoSelector.tsx`  |
-| shadcn/ui components | `kebab-case`  | `button.tsx`, `card.tsx`            |
-| Route files          | TanStack conv | `_authed.tsx`, `chat.$sessionId.tsx`|
-| Directories          | `kebab-case`  | `db-collections/`, `tanstack-query/`|
-| Variables/functions  | `camelCase`   | `dbWriter`, `handleSubmit`          |
-| Types & interfaces   | `PascalCase`  | `StreamEvent`, `ToolState`          |
-| Constants            | `UPPER_SNAKE` | `DEFAULT_MODEL`, `SESSION_COLUMNS`  |
-| DB schema exports    | `camelCase`   | `userProfiles`, `agentSessions`     |
+- Files: `kebab-case` (`auth-helpers.ts`, `session-import.ts`)
+- React components: `PascalCase` (`ChatView.tsx`)
+- Variables/functions: `camelCase`
+- Types/interfaces: `PascalCase`
+- Constants: `UPPER_SNAKE_CASE`
+- Route files: TanStack file-route style (`_authed.tsx`, `chat.$sessionId.tsx`)
+- DB schema exports: `camelCase` (`agentSessions`, `sessionEvents`)
 
 ### Types vs Interfaces
 
-- Use `type` by default for type aliases, unions, and utility types.
-- Use `interface` for component props and complex object shapes describing
-  API contracts (e.g., `interface ChatViewProps`, `interface CloneResult`).
-- Discriminated unions use a string literal `type` field:
-  ```typescript
-  type StreamEvent =
-    | { type: "part-update"; partId: string; content: string }
-    | { type: "status"; status: string };
-  ```
+- Default to `type` for unions, aliases, mapped/utility types.
+- Use `interface` for component props and contract-like object shapes.
+- Use discriminated unions with a literal `type` field for event/state models.
+
+### React and Routing
+
+- Keep route modules in `src/routes/` and API routes in `src/routes/api/`.
+- Do not manually edit `src/routeTree.gen.ts`.
+- Prefer colocated hooks/utilities when scope is route-specific.
 
 ### Error Handling
 
-- **API routes**: `try/catch` with `error: unknown`, narrow via `instanceof Error`:
-  ```typescript
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Failed to start session";
-    return Response.json({ error: message }, { status: 500 });
-  }
-  ```
-- **Trigger.dev tasks**: Use `logger.error(...)` with structured context.
-- **Best-effort cleanup**: Empty `catch {}` with a `/* Best-effort */` comment.
-- **Auth validation**: Return `Response` objects on failure, not exceptions:
-  ```typescript
-  async function validateAgentAuth(req: Request): Promise<{ userId: string } | Response>
-  ```
-- **Client-side**: Set error state via React — `setError(err instanceof Error ? err.message : "...")`.
-- Use `// biome-ignore lint/suspicious/noExplicitAny: <reason>` when SDK types are opaque.
+- In API handlers, catch `unknown` and narrow with `instanceof Error`.
+- Return `Response.json(..., { status })` for user-facing failures.
+- In Trigger.dev tasks, log structured errors with relevant context.
+- Use best-effort cleanup in `catch {}` only with a brief justification comment.
+- In client code, convert unknown errors into safe user messages.
 
-## Project Structure
+### Comments and Pragmas
 
-```
-src/
-  components/          # React components
-    chat/              # Chat UI (ChatView, SessionSidebar, ToolCall, etc.)
-    ui/                # shadcn/ui primitives (button, card, dialog, etc.)
-  db/                  # Drizzle DB instance + schema (5 tables)
-  hooks/               # Custom React hooks
-  integrations/        # Third-party provider wrappers (TanStack Query, Better Auth)
-  lib/                 # Shared utilities, auth helpers, display-item pipeline
-  routes/              # TanStack Router file-based routes
-    api/               # Server API endpoints (agent/, github/, shapes/, webhook/)
-    _authed/           # Auth-gated pages (dashboard, chat)
-  trigger/             # Trigger.dev background tasks
-    lib/               # Task helpers (clone, DB writer, event handler, etc.)
-```
+- Keep comments minimal and only for non-obvious behavior.
+- When Biome suppressions are unavoidable, include a reason:
+  - `// biome-ignore lint/...: reason`
 
-Key files:
-- `src/db/schema.ts` — Drizzle schema (user_profiles, repositories, agent_sessions, session_events)
-- `src/lib/auth.ts` — Better Auth server config
-- `src/lib/collections.ts` — Electric SQL / TanStack DB collection definitions
-- `src/lib/display-items.ts` — StreamEvent → DisplayItem rendering pipeline
-- `src/trigger/run-session.ts` — Main Trigger.dev task (orchestrates the agent)
-- `trigger.config.ts` — Trigger.dev config (custom Docker build, 1hr max duration)
-- `src/routeTree.gen.ts` — Auto-generated by TanStack Router; never edit manually
+## Testing Guidance
 
-## Testing
+- Place tests next to implementation files (`foo.ts` -> `foo.test.ts`).
+- Use Vitest + Testing Library for component tests.
+- Prefer deterministic tests; avoid network and timing flakiness.
+- For debugging, target one file/test first, then run full suite.
 
-Test infra is configured but test files do not yet exist. When adding tests:
+## Environment and Secrets
 
-- Place test files next to the source: `foo.ts` → `foo.test.ts`
-- Use Vitest (`vitest run`) with `@testing-library/react` for component tests
-- jsdom is configured as the test environment
+Required env vars are listed in `.env.example` (notably `DATABASE_URL`, auth keys, GitHub OAuth keys, Trigger, Electric, and AI gateway keys).
+Never commit real secrets or tokens.
 
-## shadcn/ui
+## External Agent Rules Audit
 
-Install new components with:
-```bash
-pnpm dlx shadcn@latest add <component>
-```
-Components go to `src/components/ui/`. Style: New York, base color: Zinc.
-Uses `#/lib/utils` for the `cn()` helper (clsx + tailwind-merge).
+Checked for additional agent-rule files:
+- `.cursor/rules/`: not present
+- `.cursorrules`: not present
+- `.github/copilot-instructions.md`: not present
 
-## Route Files
-
-TanStack Router uses file-based routing in `src/routes/`. The route tree is
-auto-generated into `src/routeTree.gen.ts` — never edit it by hand.
-
-- `__root.tsx` — Root layout (HTML shell, providers)
-- `_authed.tsx` — Auth-gated layout wrapper (redirects unauthenticated users)
-- `_authed/chat.$sessionId.tsx` — Dynamic route for active chat sessions
-- `api/**/*.ts` — Server-only API routes (createAPIFileRoute)
-
-## Environment
-
-See `.env.example` for required variables. Key ones: `DATABASE_URL`,
-`BETTER_AUTH_SECRET`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`,
-`TRIGGER_SECRET_KEY`, `ELECTRIC_URL`, `AI_GATEWAY_API_KEY`.
+If any of these files are added later, merge their instructions into this document.
