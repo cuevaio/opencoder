@@ -1,4 +1,6 @@
 import { useCallback, useState } from "react";
+import { Button } from "#/components/ui/button.tsx";
+import { Input } from "#/components/ui/input.tsx";
 import type { QuestionInfo } from "#/lib/session-types";
 
 interface QuestionFormProps {
@@ -63,7 +65,7 @@ export function QuestionForm({
 
 	if (submitted || !isPending) {
 		return (
-			<div className="rounded border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
+			<div className="rounded-lg border border-border bg-surface-1 px-3 py-2 text-xs text-muted-foreground">
 				{submitted ? "Answer submitted" : "Question answered"}
 			</div>
 		);
@@ -71,7 +73,7 @@ export function QuestionForm({
 
 	return (
 		<div
-			className="space-y-4 rounded border border-border bg-muted/30 px-4 py-3"
+			className="space-y-4 rounded-xl border border-border/80 bg-surface-1 px-4 py-3"
 			data-token-id={tokenId}
 		>
 			{questions.map((q, qIndex) => (
@@ -90,7 +92,7 @@ export function QuestionForm({
 										onClick={() =>
 											handleOptionToggle(qIndex, opt.label, q.multiple ?? false)
 										}
-										className={`block min-h-[44px] w-full rounded border px-3 py-2.5 text-left text-xs press-scale sm:min-h-0 sm:py-1.5 ${
+										className={`block min-h-[44px] w-full rounded-lg border px-3 py-2.5 text-left text-xs press-scale sm:min-h-0 sm:py-2 ${
 											isSelected
 												? "border-foreground bg-foreground/10 text-foreground"
 												: "border-border text-muted-foreground hover:border-muted-foreground"
@@ -109,24 +111,20 @@ export function QuestionForm({
 					)}
 
 					{(q.custom !== false || !q.options?.length) && (
-						<input
+						<Input
 							type="text"
 							value={customInputs[qIndex] || ""}
 							onChange={(e) => handleCustomInput(qIndex, e.target.value)}
 							placeholder="Type your own answer..."
-							className="min-h-[44px] w-full rounded border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-ring focus:outline-none sm:min-h-0 sm:px-2 sm:py-1 sm:text-xs"
+							className="h-11 sm:h-10 sm:text-xs"
 						/>
 					)}
 				</div>
 			))}
 
-			<button
-				type="button"
-				onClick={handleSubmit}
-				className="min-h-[44px] w-full rounded bg-foreground px-4 py-2.5 text-sm font-medium text-background hover:opacity-80 press-scale sm:min-h-0 sm:w-auto sm:px-3 sm:py-1 sm:text-xs"
-			>
+			<Button type="button" onClick={handleSubmit} className="w-full sm:w-auto">
 				Submit answer
-			</button>
+			</Button>
 		</div>
 	);
 }

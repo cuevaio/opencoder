@@ -66,7 +66,7 @@ function NewSessionPage() {
 	return (
 		<div className="flex h-full flex-col">
 			{/* Mobile header bar with sidebar toggle */}
-			<div className="flex items-center justify-between border-b border-border px-3 py-2 md:hidden">
+			<div className="flex items-center justify-between border-b border-border/80 bg-background/90 px-3 py-3 pt-safe backdrop-blur-sm md:hidden">
 				<div className="flex items-center gap-2">
 					<button
 						type="button"
@@ -76,7 +76,7 @@ function NewSessionPage() {
 					>
 						<PanelLeftOpen className="h-5 w-5" />
 					</button>
-					<span className="text-sm font-semibold text-foreground">
+					<span className="text-sm font-semibold tracking-tight text-foreground">
 						New Session
 					</span>
 				</div>
@@ -84,31 +84,36 @@ function NewSessionPage() {
 			</div>
 
 			<main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-4 py-8 sm:py-12">
-				<h1 className="mb-2 text-2xl font-bold">New Session</h1>
-				<p className="mb-8 text-sm text-muted-foreground">
-					Select a GitHub repository and describe what you want the agent to do.
-				</p>
+				<div className="surface-panel p-5 sm:p-6">
+					<h1 className="mb-2 text-2xl font-bold tracking-tight">
+						New Session
+					</h1>
+					<p className="mb-8 text-sm text-muted-foreground">
+						Select a GitHub repository and describe what you want the agent to
+						do.
+					</p>
 
-				<div className="mb-6">
-					<RepoSelector
-						value={repoUrl}
-						onChange={setRepoUrl}
-						disabled={isSubmitting}
+					<div className="mb-6">
+						<RepoSelector
+							value={repoUrl}
+							onChange={setRepoUrl}
+							disabled={isSubmitting}
+						/>
+					</div>
+
+					{error && (
+						<div className="mb-4 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
+							{error}
+						</div>
+					)}
+
+					<ChatFooter
+						onSubmit={handleSubmit}
+						isSubmitting={isSubmitting}
+						disabled={!repoUrl.trim()}
+						defaultModel={defaultModel}
 					/>
 				</div>
-
-				{error && (
-					<div className="mb-4 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
-						{error}
-					</div>
-				)}
-
-				<ChatFooter
-					onSubmit={handleSubmit}
-					isSubmitting={isSubmitting}
-					disabled={!repoUrl.trim()}
-					defaultModel={defaultModel}
-				/>
 			</main>
 		</div>
 	);

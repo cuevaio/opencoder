@@ -24,33 +24,36 @@ export function AppHeader({ variant = "public" }: AppHeaderProps) {
 	};
 
 	return (
-		<header className="border-b border-border pt-safe">
-			<div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
+		<header className="border-b border-border/80 bg-background/90 pt-safe backdrop-blur-sm">
+			<div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
 				{/* Logo */}
-				<Link to="/" className="font-semibold text-foreground press-scale">
+				<Link
+					to="/"
+					className="text-lg font-semibold tracking-tight text-foreground press-scale"
+				>
 					OpenCoder
 				</Link>
 
 				{/* Desktop nav */}
-				<nav className="hidden items-center gap-4 md:flex">
+				<nav className="hidden items-center gap-2 md:flex">
 					{variant === "authed" ? (
 						<>
 							<Link
 								to="/chat"
-								className="text-sm font-medium text-foreground hover:text-muted-foreground"
+								className="rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
 							>
 								Chat
 							</Link>
 							<Link
 								to="/dashboard"
-								className="text-sm font-medium text-foreground hover:text-muted-foreground"
+								className="rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
 							>
 								Dashboard
 							</Link>
 							<button
 								type="button"
 								onClick={handleSignOut}
-								className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted press-scale"
+								className="rounded-md border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted press-scale"
 							>
 								Sign out
 							</button>
@@ -58,7 +61,7 @@ export function AppHeader({ variant = "public" }: AppHeaderProps) {
 					) : (
 						<Link
 							to="/sign-in"
-							className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background hover:opacity-90 press-scale"
+							className="rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90 press-scale"
 						>
 							Sign in with GitHub
 						</Link>
@@ -78,14 +81,12 @@ export function AppHeader({ variant = "public" }: AppHeaderProps) {
 
 			{/* Mobile nav sheet */}
 			<Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-				<SheetContent
-					side="right"
-					showCloseButton={false}
-					className="w-[280px] p-0"
-				>
+				<SheetContent side="right" showCloseButton={false} className="p-0">
 					<SheetHeader className="border-b border-border px-4 py-4">
 						<div className="flex items-center justify-between">
-							<SheetTitle className="font-semibold">OpenCoder</SheetTitle>
+							<SheetTitle className="text-base font-semibold">
+								OpenCoder
+							</SheetTitle>
 							<button
 								type="button"
 								onClick={() => setMobileMenuOpen(false)}
@@ -103,14 +104,14 @@ export function AppHeader({ variant = "public" }: AppHeaderProps) {
 								<Link
 									to="/chat"
 									onClick={() => setMobileMenuOpen(false)}
-									className="flex min-h-[44px] items-center rounded-lg px-4 py-3 text-base font-medium text-foreground hover:bg-muted press-scale"
+									className="flex min-h-[48px] items-center rounded-lg bg-surface-1 px-4 py-3 text-base font-medium text-foreground hover:bg-muted press-scale"
 								>
 									Chat
 								</Link>
 								<Link
 									to="/dashboard"
 									onClick={() => setMobileMenuOpen(false)}
-									className="flex min-h-[44px] items-center rounded-lg px-4 py-3 text-base font-medium text-foreground hover:bg-muted press-scale"
+									className="flex min-h-[48px] items-center rounded-lg bg-surface-1 px-4 py-3 text-base font-medium text-foreground hover:bg-muted press-scale"
 								>
 									Dashboard
 								</Link>
@@ -121,7 +122,7 @@ export function AppHeader({ variant = "public" }: AppHeaderProps) {
 										setMobileMenuOpen(false);
 										handleSignOut();
 									}}
-									className="flex min-h-[44px] items-center rounded-lg px-4 py-3 text-base font-medium text-foreground hover:bg-muted press-scale"
+									className="flex min-h-[48px] items-center rounded-lg bg-surface-1 px-4 py-3 text-base font-medium text-foreground hover:bg-muted press-scale"
 								>
 									Sign out
 								</button>
@@ -130,7 +131,7 @@ export function AppHeader({ variant = "public" }: AppHeaderProps) {
 							<Link
 								to="/sign-in"
 								onClick={() => setMobileMenuOpen(false)}
-								className="flex min-h-[44px] items-center rounded-lg bg-foreground px-4 py-3 text-base font-medium text-background hover:opacity-90 press-scale"
+								className="flex min-h-[48px] items-center rounded-lg bg-foreground px-4 py-3 text-base font-medium text-background hover:opacity-90 press-scale"
 							>
 								Sign in with GitHub
 							</Link>

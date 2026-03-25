@@ -15,11 +15,11 @@ function HomePage() {
 			<AppHeader variant={variant} />
 
 			{/* Hero */}
-			<main className="flex flex-1 flex-col items-center justify-center px-4 py-16 text-center">
-				<h1 className="text-3xl font-bold tracking-tight sm:text-5xl">
+			<main className="flex flex-1 flex-col items-center justify-center px-4 py-16 text-center sm:py-20">
+				<h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
 					OpenCoder
 				</h1>
-				<p className="mt-4 max-w-lg text-base text-muted-foreground sm:text-lg">
+				<p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
 					Run a coding agent on any GitHub repository. Ask questions, fix bugs,
 					and ship features — all from your browser.
 				</p>
@@ -27,14 +27,14 @@ function HomePage() {
 					{session ? (
 						<Link
 							to="/chat"
-							className="rounded-md bg-foreground px-5 py-2.5 text-sm font-semibold text-background hover:opacity-90 press-scale"
+							className="rounded-md bg-foreground px-5 py-3 text-sm font-semibold text-background hover:opacity-90 press-scale"
 						>
 							Open Chat →
 						</Link>
 					) : (
 						<Link
 							to="/sign-in"
-							className="rounded-md bg-foreground px-5 py-2.5 text-sm font-semibold text-background hover:opacity-90 press-scale"
+							className="rounded-md bg-foreground px-5 py-3 text-sm font-semibold text-background hover:opacity-90 press-scale"
 						>
 							Get started →
 						</Link>
@@ -43,7 +43,7 @@ function HomePage() {
 						href="https://github.com/cuevaio/coder"
 						target="_blank"
 						rel="noopener noreferrer"
-						className="rounded-md border border-border px-5 py-2.5 text-sm font-semibold hover:bg-muted press-scale"
+						className="rounded-md border border-border bg-background/60 px-5 py-3 text-sm font-semibold hover:bg-muted press-scale"
 					>
 						GitHub
 					</a>
@@ -68,9 +68,12 @@ function HomePage() {
 								"Continue a session where you left off. Ask follow-up questions and iterate on the agent's work.",
 						},
 					].map((f) => (
-						<div key={f.title} className="rounded-lg border border-border p-5">
+						<div
+							key={f.title}
+							className="rounded-xl border border-border/80 bg-surface-1 p-5"
+						>
 							<h3 className="font-semibold">{f.title}</h3>
-							<p className="mt-1.5 text-sm text-muted-foreground">
+							<p className="mt-2 text-sm leading-relaxed text-muted-foreground">
 								{f.description}
 							</p>
 						</div>
@@ -79,7 +82,7 @@ function HomePage() {
 			</main>
 
 			{/* Footer */}
-			<footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
+			<footer className="border-t border-border/80 bg-background/70 py-6 text-center text-xs text-muted-foreground">
 				OpenCoder — built with TanStack Start, Electric SQL, and Trigger.dev
 			</footer>
 		</div>

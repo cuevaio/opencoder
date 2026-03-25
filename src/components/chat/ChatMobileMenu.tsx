@@ -35,14 +35,12 @@ export function ChatMobileMenu() {
 			</button>
 
 			<Sheet open={open} onOpenChange={setOpen}>
-				<SheetContent
-					side="right"
-					showCloseButton={false}
-					className="w-[280px] p-0"
-				>
+				<SheetContent side="right" showCloseButton={false} className="p-0">
 					<SheetHeader className="border-b border-border px-4 py-4">
 						<div className="flex items-center justify-between">
-							<SheetTitle className="font-semibold">OpenCoder</SheetTitle>
+							<SheetTitle className="text-base font-semibold">
+								OpenCoder
+							</SheetTitle>
 							<button
 								type="button"
 								onClick={() => setOpen(false)}
@@ -58,21 +56,21 @@ export function ChatMobileMenu() {
 						<Link
 							to="/"
 							onClick={() => setOpen(false)}
-							className="flex min-h-[44px] items-center rounded-lg px-4 py-3 text-base font-medium text-foreground hover:bg-muted press-scale"
+							className="flex min-h-[48px] items-center rounded-lg bg-surface-1 px-4 py-3 text-base font-medium text-foreground hover:bg-muted press-scale"
 						>
 							Home
 						</Link>
 						<Link
 							to="/chat"
 							onClick={() => setOpen(false)}
-							className="flex min-h-[44px] items-center rounded-lg px-4 py-3 text-base font-medium text-foreground hover:bg-muted press-scale"
+							className="flex min-h-[48px] items-center rounded-lg bg-surface-1 px-4 py-3 text-base font-medium text-foreground hover:bg-muted press-scale"
 						>
 							Chat
 						</Link>
 						<Link
 							to="/dashboard"
 							onClick={() => setOpen(false)}
-							className="flex min-h-[44px] items-center rounded-lg px-4 py-3 text-base font-medium text-foreground hover:bg-muted press-scale"
+							className="flex min-h-[48px] items-center rounded-lg bg-surface-1 px-4 py-3 text-base font-medium text-foreground hover:bg-muted press-scale"
 						>
 							Dashboard
 						</Link>
@@ -83,7 +81,7 @@ export function ChatMobileMenu() {
 								setOpen(false);
 								handleSignOut();
 							}}
-							className="flex min-h-[44px] items-center rounded-lg px-4 py-3 text-base font-medium text-foreground hover:bg-muted press-scale"
+							className="flex min-h-[48px] items-center rounded-lg bg-surface-1 px-4 py-3 text-base font-medium text-foreground hover:bg-muted press-scale"
 						>
 							Sign out
 						</button>

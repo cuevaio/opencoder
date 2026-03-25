@@ -160,9 +160,9 @@ function DashboardPage() {
 			<AppHeader variant="authed" />
 
 			<main className="mx-auto max-w-3xl px-4 py-8 sm:py-10">
-				<h1 className="text-2xl font-bold">Dashboard</h1>
+				<h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
 
-				<div className="mt-6 rounded-lg border border-border p-5 sm:p-6">
+				<div className="mt-6 rounded-xl border border-border/80 bg-surface-1 p-5 sm:p-6">
 					<div className="flex flex-col gap-4 sm:flex-row sm:items-center">
 						{user.image ? (
 							<img
@@ -182,7 +182,7 @@ function DashboardPage() {
 					</div>
 				</div>
 
-				<div className="mt-4 rounded-lg border border-border p-5 sm:p-6">
+				<div className="mt-4 rounded-xl border border-border/80 bg-surface-1 p-5 sm:p-6">
 					<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 						<div>
 							<h2 className="font-semibold">GitHub Connection</h2>
@@ -210,7 +210,7 @@ function DashboardPage() {
 									callbackURL: "/dashboard",
 								})
 							}
-							className="mt-4 flex w-full items-center justify-center gap-2 rounded-md bg-foreground px-4 py-2.5 text-sm font-medium text-background hover:opacity-90 press-scale sm:w-auto sm:justify-start"
+							className="mt-4 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-md bg-foreground px-4 py-3 text-sm font-medium text-background hover:opacity-90 press-scale sm:w-auto sm:justify-start"
 						>
 							<svg
 								className="h-4 w-4"
@@ -225,19 +225,19 @@ function DashboardPage() {
 					)}
 				</div>
 
-				<div className="mt-4 rounded-lg border border-border p-5 sm:p-6">
+				<div className="mt-4 rounded-xl border border-border/80 bg-surface-1 p-5 sm:p-6">
 					<h2 className="font-semibold">Quick Actions</h2>
 					<div className="mt-4 flex gap-3">
 						<Link
 							to="/chat"
-							className="rounded-md bg-foreground px-4 py-2.5 text-sm font-medium text-background hover:opacity-90 press-scale"
+							className="rounded-md bg-foreground px-4 py-3 text-sm font-medium text-background hover:opacity-90 press-scale"
 						>
 							Open Chat →
 						</Link>
 					</div>
 				</div>
 
-				<div className="mt-4 rounded-lg border border-border p-5 sm:p-6">
+				<div className="mt-4 rounded-xl border border-border/80 bg-surface-1 p-5 sm:p-6">
 					<div className="flex flex-wrap items-center justify-between gap-3">
 						<div>
 							<h2 className="font-semibold">AI Provider Keys</h2>
@@ -248,7 +248,7 @@ function DashboardPage() {
 						<button
 							type="button"
 							onClick={loadKeys}
-							className="rounded border border-border px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted"
+							className="rounded-md border border-border bg-background/70 px-3 py-2 text-xs text-muted-foreground hover:bg-muted"
 						>
 							Refresh
 						</button>
@@ -274,7 +274,7 @@ function DashboardPage() {
 									return (
 										<div
 											key={provider}
-											className="rounded border border-border p-4"
+											className="rounded-lg border border-border/70 bg-background/50 p-4"
 										>
 											<div className="flex flex-wrap items-center justify-between gap-2">
 												<span className="text-sm font-medium">
@@ -298,7 +298,7 @@ function DashboardPage() {
 															[provider]: event.target.value,
 														}))
 													}
-													className="h-10 flex-1 rounded border border-border bg-background px-3 text-sm outline-none focus:border-ring"
+													className="h-11 flex-1 rounded-md border border-border bg-background/70 px-3 text-sm outline-none focus:border-ring"
 													disabled={isSaving}
 												/>
 												<div className="flex gap-2">
@@ -306,7 +306,7 @@ function DashboardPage() {
 														type="button"
 														onClick={() => handleSaveKey(provider)}
 														disabled={!drafts[provider].trim() || isSaving}
-														className="rounded bg-foreground px-3 py-2 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50"
+														className="rounded-md bg-foreground px-3 py-2.5 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50"
 													>
 														{isSaving ? "Saving..." : "Save"}
 													</button>
@@ -314,7 +314,7 @@ function DashboardPage() {
 														type="button"
 														onClick={() => handleDeleteKey(provider)}
 														disabled={!status?.configured || isSaving}
-														className="rounded border border-border px-3 py-2 text-sm text-muted-foreground hover:bg-muted disabled:opacity-50"
+														className="rounded-md border border-border bg-background/70 px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted disabled:opacity-50"
 													>
 														Remove
 													</button>

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { modelOptions } from "#/lib/ai/model-registry.ts";
+import { Button } from "../ui/button.tsx";
 import {
 	Select,
 	SelectContent,
@@ -7,6 +8,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "../ui/select.tsx";
+import { Textarea } from "../ui/textarea.tsx";
 
 const GIT_BRANCH_COMMIT_PUSH_PROMPT =
 	"Create a new branch for the current changes, commit with a clear conventional message, and push to origin with upstream tracking. Check git status/diff/log first, do not force push, and do not include secrets.";
@@ -60,79 +62,92 @@ export function ChatFooter({
 	);
 
 	return (
-		<div className="space-y-3">
-			<div className="flex flex-wrap items-center gap-2">
-				<span className="text-xs text-muted-foreground">Model:</span>
-				<Select value={model} onValueChange={setModel}>
-					<SelectTrigger
-						size="sm"
-						className="h-8 min-w-[220px] text-xs"
-						disabled={isSubmitting || disabled}
-					>
-						<SelectValue placeholder="Select model" />
-					</SelectTrigger>
-					<SelectContent align="start">
-						{modelOptions.map((option) => (
-							<SelectItem key={option.id} value={option.id}>
-								{option.label}
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
+		<div className="space-y-2">
+			<div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2">
+				<div className="space-y-1">
+					<span className="text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
+						Model
+					</span>
+					<Select value={model} onValueChange={setModel}>
+						<SelectTrigger
+							size="sm"
+							className="h-9 w-full min-w-0 text-xs"
+							disabled={isSubmitting || disabled}
+						>
+							<SelectValue placeholder="Select model" />
+						</SelectTrigger>
+						<SelectContent align="start">
+							{modelOptions.map((option) => (
+								<SelectItem key={option.id} value={option.id}>
+									{option.label}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</div>
+
+				<div className="space-y-1">
+					<span className="text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
+						Mode
+					</span>
+					<div className="inline-flex h-9 rounded-lg border border-border bg-surface-1 p-0.5">
+						<button
+							type="button"
+							onClick={() => setMode("plan")}
+							disabled={isSubmitting || disabled}
+							className={`rounded-md px-2.5 py-1 text-xs font-semibold press-scale disabled:opacity-50 ${
+								mode === "plan"
+									? "bg-foreground text-background"
+									: "text-muted-foreground hover:bg-muted"
+							}`}
+						>
+							Plan
+						</button>
+						<button
+							type="button"
+							onClick={() => setMode("build")}
+							disabled={isSubmitting || disabled}
+							className={`rounded-md px-2.5 py-1 text-xs font-semibold press-scale disabled:opacity-50 ${
+								mode === "build"
+									? "bg-foreground text-background"
+									: "text-muted-foreground hover:bg-muted"
+							}`}
+						>
+							Build
+						</button>
+					</div>
+				</div>
 			</div>
 
-			<div className="flex items-end gap-2">
-				<textarea
+			<div className="flex flex-col gap-2">
+				<Textarea
 					value={text}
 					onChange={(e) => setText(e.target.value)}
 					onKeyDown={handleKeyDown}
 					placeholder={placeholder}
 					rows={2}
 					disabled={isSubmitting || disabled}
-					className="min-h-[44px] flex-1 resize-none rounded border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-ring focus:outline-none disabled:opacity-50 md:text-sm"
+					className="min-h-[72px] resize-none px-3 py-2 text-sm"
 				/>
-				<button
-					type="button"
-					onClick={handleGitSubmit}
-					disabled={isSubmitting || disabled}
-					className="min-h-[44px] rounded border border-border bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-muted press-scale disabled:opacity-50"
-				>
-					Git: Branch + Commit + Push
-				</button>
-				<button
-					type="button"
-					onClick={handleSubmit}
-					disabled={!text.trim() || isSubmitting || disabled}
-					className="min-h-[44px] rounded bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-80 press-scale disabled:opacity-50"
-				>
-					{isSubmitting ? "..." : "Send"}
-				</button>
-			</div>
-
-			<div className="flex items-center gap-2">
-				<span className="text-xs text-muted-foreground">Mode:</span>
-				<button
-					type="button"
-					onClick={() => setMode("plan")}
-					className={`rounded px-3 py-1.5 text-xs font-medium press-scale sm:px-2 sm:py-0.5 ${
-						mode === "plan"
-							? "bg-foreground text-background"
-							: "text-muted-foreground hover:bg-muted"
-					}`}
-				>
-					Plan
-				</button>
-				<button
-					type="button"
-					onClick={() => setMode("build")}
-					className={`rounded px-3 py-1.5 text-xs font-medium press-scale sm:px-2 sm:py-0.5 ${
-						mode === "build"
-							? "bg-foreground text-background"
-							: "text-muted-foreground hover:bg-muted"
-					}`}
-				>
-					Build
-				</button>
+				<div className="grid grid-cols-2 gap-2">
+					<Button
+						type="button"
+						onClick={handleGitSubmit}
+						disabled={isSubmitting || disabled}
+						variant="outline"
+						className="h-9 w-full px-2 text-[11px]"
+					>
+						Git: Branch + Commit + Push
+					</Button>
+					<Button
+						type="button"
+						onClick={handleSubmit}
+						disabled={!text.trim() || isSubmitting || disabled}
+						className="h-9 w-full"
+					>
+						{isSubmitting ? "..." : "Send"}
+					</Button>
+				</div>
 			</div>
 		</div>
 	);

@@ -143,7 +143,10 @@ export function RepoSelector({
 
 	return (
 		<div>
-			<label htmlFor="repo-selector" className="mb-1 block text-sm font-medium">
+			<label
+				htmlFor="repo-selector"
+				className="mb-1 block text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase"
+			>
 				Repository
 			</label>
 
@@ -156,7 +159,7 @@ export function RepoSelector({
 							role="combobox"
 							aria-expanded={open}
 							disabled={disabled || showLoading}
-							className="w-full justify-between font-normal"
+							className="h-11 w-full justify-between font-normal"
 						>
 							<span className="truncate">
 								{selectedRepo
@@ -169,7 +172,7 @@ export function RepoSelector({
 						</Button>
 					</PopoverTrigger>
 					<PopoverContent
-						className="p-0"
+						className="rounded-xl border border-border/80 p-0 shadow-md"
 						align="start"
 						style={{ width: "var(--radix-popover-trigger-width)" }}
 					>
@@ -236,6 +239,7 @@ export function RepoSelector({
 				<Button
 					variant="outline"
 					size="icon"
+					className="h-11 w-11"
 					onClick={handleRefresh}
 					disabled={isFetching || disabled}
 					title="Refresh repositories"

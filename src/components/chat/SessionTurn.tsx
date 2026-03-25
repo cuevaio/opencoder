@@ -32,7 +32,7 @@ export function SessionTurn({
 		<div className="space-y-4" onSubmitCapture={handleSubmitCapture}>
 			{/* User prompt */}
 			<div className="flex justify-end">
-				<div className="max-w-[90%] rounded-lg bg-foreground px-3 py-2.5 text-sm text-background sm:max-w-[80%]">
+				<div className="max-w-[92%] rounded-xl bg-foreground px-3.5 py-3 text-sm leading-relaxed text-background shadow-xs sm:max-w-[80%]">
 					{turn.prompt}
 				</div>
 			</div>
@@ -72,11 +72,11 @@ function TurnItem({
 
 		case "reasoning-block":
 			return (
-				<details className="text-xs text-muted-foreground">
+				<details className="rounded-lg border border-border/70 bg-surface-1 px-3 py-2 text-xs text-muted-foreground">
 					<summary className="cursor-pointer font-medium hover:text-foreground">
 						Thinking...
 					</summary>
-					<div className="mt-1 whitespace-pre-wrap border-l-2 border-border pl-3">
+					<div className="mt-2 whitespace-pre-wrap border-l-2 border-border pl-3 leading-relaxed">
 						{item.text}
 					</div>
 				</details>
@@ -104,7 +104,7 @@ function TurnItem({
 
 		case "question-answered":
 			return (
-				<div className="rounded border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
+				<div className="rounded-lg border border-border bg-surface-1 px-3 py-2 text-xs text-muted-foreground">
 					Answered: {item.answers.map((a) => a.join(", ")).join("; ")}
 				</div>
 			);

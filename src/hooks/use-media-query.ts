@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+export const MOBILE_MEDIA_QUERY = "(max-width: 767px)";
+
 /**
  * SSR-safe hook that tracks whether a CSS media query matches.
  * Defaults to `false` on the server and during the first client render.
@@ -28,5 +30,5 @@ export function useMediaQuery(query: string): boolean {
  * Use for toggling mobile-specific layout decisions.
  */
 export function useIsMobile(): boolean {
-	return useMediaQuery("(max-width: 767px)");
+	return useMediaQuery(MOBILE_MEDIA_QUERY);
 }

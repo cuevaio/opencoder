@@ -174,7 +174,7 @@ export function ChatView({
 
 		return (
 			<div className="flex h-full flex-col">
-				<div className="flex items-center justify-between border-b border-border px-3 py-2 sm:px-4">
+				<div className="flex items-center justify-between border-b border-border px-3 py-3 sm:px-4">
 					<div className="flex items-center gap-2">
 						{/* Sidebar toggle placeholder */}
 						<div className="h-5 w-5 md:hidden" />
@@ -184,7 +184,7 @@ export function ChatView({
 				</div>
 				<div className="flex flex-1 items-center justify-center px-4">
 					{shouldShowError ? (
-						<div className="w-full max-w-sm space-y-3 rounded-lg border border-border bg-card p-4 text-center">
+						<div className="w-full max-w-sm space-y-3 rounded-xl border border-border/80 bg-surface-1 p-4 text-center">
 							<div className="text-sm font-medium text-foreground">
 								Session sync interrupted
 							</div>
@@ -237,9 +237,9 @@ export function ChatView({
 		(showSlowLoadFallback || Boolean(sessionsSyncError));
 
 	return (
-		<div className="flex h-full flex-col">
+		<div className="flex h-full flex-col bg-background">
 			{/* Header bar */}
-			<div className="flex items-center justify-between border-b border-border px-3 py-2 sm:px-4">
+			<div className="flex items-center justify-between border-b border-border/80 bg-background/90 px-3 py-3 pt-safe backdrop-blur-sm sm:px-4">
 				<div className="flex min-w-0 items-center gap-2">
 					{/* Mobile sidebar toggle */}
 					<button
@@ -251,21 +251,21 @@ export function ChatView({
 						<PanelLeftOpen className="h-5 w-5" />
 					</button>
 
-					<span className="max-w-[150px] truncate font-mono text-xs text-muted-foreground sm:max-w-none">
+					<span className="max-w-[170px] truncate font-mono text-xs text-muted-foreground sm:max-w-none">
 						{repoDisplay}
 					</span>
 					{status && isWorking && (
-						<span className="hidden truncate text-xs text-blue-600 dark:text-blue-400 sm:inline">
+						<span className="hidden truncate rounded-full bg-accent px-2 py-1 text-[11px] font-medium text-accent-foreground sm:inline">
 							{status}
 						</span>
 					)}
 					{isIdle && totalTokens != null && (
-						<span className="hidden text-xs text-muted-foreground sm:inline">
+						<span className="hidden rounded-full bg-surface-2 px-2 py-1 text-[11px] text-muted-foreground sm:inline">
 							{totalTokens.toLocaleString()} tokens
 						</span>
 					)}
 					{isIdle && totalCost != null && totalCost > 0 && (
-						<span className="hidden text-xs text-muted-foreground sm:inline">
+						<span className="hidden rounded-full bg-surface-2 px-2 py-1 text-[11px] text-muted-foreground sm:inline">
 							${(totalCost / 1_000_000).toFixed(4)}
 						</span>
 					)}
@@ -274,7 +274,7 @@ export function ChatView({
 					<button
 						type="button"
 						onClick={onNewSession}
-						className="rounded px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground press-scale"
+						className="min-h-[44px] rounded-md border border-border bg-background/70 px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground press-scale"
 					>
 						New session
 					</button>
@@ -285,9 +285,9 @@ export function ChatView({
 			{/* Scrollable chat area */}
 			<div
 				ref={scrollRef}
-				className="flex-1 overflow-y-auto px-3 py-4 sm:px-4 sm:py-6"
+				className="flex-1 overflow-y-auto px-3 py-5 sm:px-4 sm:py-6"
 			>
-				<div className="mx-auto max-w-3xl space-y-6">
+				<div className="mx-auto max-w-3xl space-y-7">
 					{turns.map((turn, i) => (
 						<SessionTurn
 							key={`turn-${turn.prompt.slice(0, 20)}-${i.toString()}`}
@@ -302,24 +302,24 @@ export function ChatView({
 			</div>
 
 			{/* Footer */}
-			<div className="border-t border-border px-3 py-3 pb-safe sm:px-4">
+			<div className="border-t border-border/80 bg-background/90 px-3 py-2 pb-safe backdrop-blur-sm sm:px-4">
 				<div className="mx-auto max-w-3xl">
 					{shouldShowReconnectNotice && (
-						<div className="mb-2 rounded border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
+						<div className="mb-2 rounded-lg border border-border bg-surface-2 px-3 py-2 text-xs text-muted-foreground">
 							{shouldShowInlineError
 								? `Session sync issue: ${sessionsSyncError ?? "temporary sync interruption"}`
 								: "Reconnecting session updates..."}
 						</div>
 					)}
 					{isWorking && !pendingQuestion && (
-						<div className="flex items-center justify-between">
+						<div className="mb-2 flex items-center justify-between rounded-lg border border-border/70 bg-surface-1 px-3 py-1.5">
 							<span className="text-xs text-muted-foreground">
 								Agent is working...
 							</span>
 							<button
 								type="button"
 								onClick={handleCancel}
-								className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 press-scale dark:text-red-400 dark:hover:bg-red-950"
+								className="min-h-[36px] rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 press-scale dark:text-red-400 dark:hover:bg-red-950"
 							>
 								Cancel
 							</button>
@@ -327,9 +327,9 @@ export function ChatView({
 					)}
 
 					{!pendingQuestion && (
-						<div className="space-y-2">
+						<div className="space-y-1.5">
 							{isIdle && error && (
-								<div className="rounded border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
+								<div className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
 									{error}
 								</div>
 							)}
@@ -345,7 +345,7 @@ export function ChatView({
 								<button
 									type="button"
 									onClick={onNewSession}
-									className="rounded px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground press-scale"
+									className="min-h-[34px] rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground press-scale"
 								>
 									End session
 								</button>

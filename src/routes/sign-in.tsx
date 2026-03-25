@@ -18,10 +18,12 @@ function SignInPage() {
 	if (session) return null;
 
 	return (
-		<div className="flex min-h-screen items-center justify-center">
-			<div className="w-full max-w-sm space-y-6 px-4">
+		<div className="flex min-h-screen items-center justify-center px-4 py-10">
+			<div className="surface-panel w-full max-w-sm space-y-6 p-6">
 				<div className="text-center">
-					<h1 className="text-2xl font-bold">Sign in to OpenCoder</h1>
+					<h1 className="text-2xl font-bold tracking-tight">
+						Sign in to OpenCoder
+					</h1>
 					<p className="mt-2 text-sm text-muted-foreground">
 						Connect your GitHub account to get started
 					</p>
@@ -35,7 +37,7 @@ function SignInPage() {
 							callbackURL: "/dashboard",
 						})
 					}
-					className="flex w-full items-center justify-center gap-2 rounded-md bg-foreground px-4 py-2.5 text-sm font-medium text-background hover:opacity-90"
+					className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-md bg-foreground px-4 py-3 text-sm font-medium text-background hover:opacity-90 press-scale"
 				>
 					<svg
 						aria-hidden

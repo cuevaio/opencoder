@@ -143,7 +143,7 @@ function ChatLayout() {
 		>
 			<div className="flex h-[100dvh] overflow-hidden bg-background text-foreground md:h-screen">
 				{/* Desktop sidebar (md+) */}
-				<div className="hidden w-64 shrink-0 md:block">
+				<div className="hidden w-72 shrink-0 border-r border-border/70 bg-surface-1 md:block">
 					<SessionSidebar
 						sessionsCollection={sessionsCollection}
 						onSelectSession={handleSelectSession}
@@ -157,7 +157,7 @@ function ChatLayout() {
 					<SheetContent
 						side="left"
 						showCloseButton={false}
-						className="w-[280px] p-0 md:hidden"
+						className="p-0 md:hidden"
 					>
 						<SheetHeader className="sr-only">
 							<SheetTitle>Sessions</SheetTitle>

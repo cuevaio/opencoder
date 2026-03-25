@@ -36,14 +36,16 @@ export function SessionSidebar({
 	);
 
 	return (
-		<div className="flex h-full flex-col border-r border-border bg-background">
+		<div className="flex h-full flex-col border-r border-border/70 bg-surface-1">
 			{/* Sidebar header */}
-			<div className="flex items-center justify-between border-b border-border px-3 py-2">
-				<span className="text-xs font-semibold text-foreground">Sessions</span>
+			<div className="flex items-center justify-between border-b border-border/80 px-4 py-3">
+				<span className="text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+					Sessions
+				</span>
 				<button
 					type="button"
 					onClick={onNewSession}
-					className="flex min-h-[36px] min-w-[36px] items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground press-scale"
+					className="flex min-h-[40px] min-w-[40px] items-center justify-center rounded-md border border-border/70 bg-background/70 text-muted-foreground hover:bg-muted hover:text-foreground press-scale"
 					title="New session"
 					aria-label="New session"
 				>
@@ -54,13 +56,13 @@ export function SessionSidebar({
 			{/* Session list */}
 			<div className="flex-1 overflow-y-auto">
 				{isLoading && (
-					<div className="px-3 py-4 text-xs text-muted-foreground">
+					<div className="px-4 py-4 text-xs text-muted-foreground">
 						Loading...
 					</div>
 				)}
 
 				{!isLoading && (!sessions || sessions.length === 0) && (
-					<div className="px-3 py-4 text-xs text-muted-foreground">
+					<div className="px-4 py-4 text-xs text-muted-foreground">
 						No sessions yet
 					</div>
 				)}
@@ -87,26 +89,26 @@ export function SessionSidebar({
 								if (activeSessionId === id) return;
 								onPrefetchSessionEvents?.(id);
 							}}
-							className={`w-full border-b border-border px-3 py-3 text-left transition-colors hover:bg-muted press-scale animate-in fade-in-0 duration-200 ${
-								activeSessionId === id ? "bg-muted" : ""
+							className={`w-full border-b border-border/50 px-4 py-3.5 text-left transition-colors hover:bg-surface-2 press-scale animate-in fade-in-0 duration-200 ${
+								activeSessionId === id ? "bg-surface-2" : ""
 							}`}
 							style={{ animationDelay: `${Math.min(i * 30, 300)}ms` }}
 						>
-							<div className="flex items-center gap-1.5">
+							<div className="flex items-center gap-2">
 								{status === "running" && (
 									<span className="inline-block h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-blue-500" />
 								)}
 								{status === "idle" && (
 									<span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-green-500" />
 								)}
-								<span className="truncate text-xs font-medium text-foreground">
+								<span className="truncate text-xs font-semibold text-foreground">
 									{title}
 								</span>
 							</div>
-							<div className="mt-0.5 truncate text-[10px] text-muted-foreground">
+							<div className="mt-1 truncate text-[11px] text-muted-foreground">
 								{repoFullName}
 							</div>
-							<div className="mt-0.5 flex items-center gap-2 text-[10px] text-muted-foreground">
+							<div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground">
 								<span>{formatRelativeTime(createdAt)}</span>
 								{status === "running" ? (
 									<span className="text-blue-600 dark:text-blue-400">
