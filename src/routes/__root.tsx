@@ -6,7 +6,6 @@ import {
 	Outlet,
 	Scripts,
 } from "@tanstack/react-router";
-import { useEffect } from "react";
 import TanStackQueryProvider from "../integrations/tanstack-query/root-provider";
 import appCss from "../styles.css?url";
 
@@ -69,45 +68,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 function RootLayout() {
 	return (
 		<TanStackQueryProvider>
-			<NavigationDiagnostics />
 			<Outlet />
 		</TanStackQueryProvider>
 	);
-}
-
-function NavigationDiagnostics() {
-	useEffect(() => {
-		if (!import.meta.env.DEV) return;
-
-		const latestNav = performance.getEntriesByType("navigation").at(-1) as
-			| PerformanceNavigationTiming
-			| undefined;
-
-		console.info("[nav-debug] mount", {
-			path: window.location.pathname,
-			navType: latestNav?.type ?? "unknown",
-		});
-
-		const onBeforeUnload = () => {
-			console.info("[nav-debug] beforeunload", {
-				path: window.location.pathname,
-			});
-		};
-
-		const onPageHide = () => {
-			console.info("[nav-debug] pagehide", {
-				path: window.location.pathname,
-			});
-		};
-
-		window.addEventListener("beforeunload", onBeforeUnload);
-		window.addEventListener("pagehide", onPageHide);
-
-		return () => {
-			window.removeEventListener("beforeunload", onBeforeUnload);
-			window.removeEventListener("pagehide", onPageHide);
-		};
-	}, []);
-
-	return null;
 }

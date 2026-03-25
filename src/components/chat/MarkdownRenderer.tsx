@@ -26,25 +26,16 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 
 			if (decision.kind === "blocked") {
 				event.preventDefault();
-				if (import.meta.env.DEV) {
-					console.info("[chat-link] blocked href", { href });
-				}
 				return;
 			}
 
 			if (decision.kind === "internal") {
 				event.preventDefault();
-				if (import.meta.env.DEV) {
-					console.info("[chat-link] internal navigate", { to: decision.to });
-				}
 				void navigate({ to: decision.to as never });
 				return;
 			}
 
 			event.preventDefault();
-			if (import.meta.env.DEV) {
-				console.info("[chat-link] external open", { href: decision.href });
-			}
 			window.open(decision.href, "_blank", "noopener,noreferrer");
 		},
 		[navigate],
@@ -70,9 +61,6 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 					{...props}
 					onSubmit={(event) => {
 						event.preventDefault();
-						if (import.meta.env.DEV) {
-							console.info("[chat-link] blocked raw form submit");
-						}
 					}}
 				>
 					{children}

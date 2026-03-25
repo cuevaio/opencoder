@@ -27,13 +27,6 @@ function ChatSessionPage() {
 
 	const handleFollowup = useCallback(
 		async (prompt: string, mode: "plan" | "build", model: string) => {
-			if (import.meta.env.DEV) {
-				console.info("[chat-followup] continue start", {
-					sessionId,
-					mode,
-					model,
-				});
-			}
 			setIsSubmitting(true);
 			setError(null);
 
@@ -45,13 +38,6 @@ function ChatSessionPage() {
 				});
 
 				const data = (await response.json()) as { error?: string };
-				if (import.meta.env.DEV) {
-					console.info("[chat-followup] continue response", {
-						sessionId,
-						status: response.status,
-						ok: response.ok,
-					});
-				}
 				if (!response.ok) {
 					throw new Error(data.error || "Failed to send follow-up");
 				}
@@ -67,12 +53,7 @@ function ChatSessionPage() {
 
 	const handleRetrySync = useCallback(() => {
 		setSyncAttempt((attempt) => attempt + 1);
-		if (import.meta.env.DEV) {
-			console.info("[chat-sync] retry requested", {
-				sessionId,
-			});
-		}
-	}, [sessionId]);
+	}, []);
 
 	if (!sessionId || Number.isNaN(sessionId)) {
 		return (

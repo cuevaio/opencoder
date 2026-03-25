@@ -2,12 +2,20 @@ import { betterAuth } from "better-auth";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { pool } from "#/db/index.ts";
 
+function getRequiredEnv(name: "GITHUB_CLIENT_ID" | "GITHUB_CLIENT_SECRET") {
+	const value = process.env[name];
+	if (!value) {
+		throw new Error(`Missing required environment variable: ${name}`);
+	}
+	return value;
+}
+
 export const auth = betterAuth({
 	database: pool,
 	socialProviders: {
 		github: {
-			clientId: process.env.GITHUB_CLIENT_ID!,
-			clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+			clientId: getRequiredEnv("GITHUB_CLIENT_ID"),
+			clientSecret: getRequiredEnv("GITHUB_CLIENT_SECRET"),
 			scope: ["repo", "read:user", "user:email"],
 		},
 	},

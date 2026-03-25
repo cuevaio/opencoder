@@ -84,11 +84,8 @@ export function ChatView({
 	useEffect(() => {
 		if (sessionRow) {
 			setHasHydratedSession(true);
-			if (import.meta.env.DEV) {
-				console.info("[chat-sync] session hydrated", { sessionId });
-			}
 		}
-	}, [sessionId, sessionRow]);
+	}, [sessionRow]);
 
 	useEffect(() => {
 		if (effectiveSessionRow) {
@@ -99,13 +96,10 @@ export function ChatView({
 		setShowSlowLoadFallback(false);
 		const timeoutId = window.setTimeout(() => {
 			setShowSlowLoadFallback(true);
-			if (import.meta.env.DEV) {
-				console.info("[chat-sync] slow-load fallback shown", { sessionId });
-			}
 		}, 10_000);
 
 		return () => window.clearTimeout(timeoutId);
-	}, [effectiveSessionRow, sessionId]);
+	}, [effectiveSessionRow]);
 
 	// ─── Build StreamEvent[] from DB rows ─────────────────────
 	const streamEvents = useMemo(
@@ -195,11 +189,6 @@ export function ChatView({
 								Session sync interrupted
 							</div>
 							<p className="text-xs text-muted-foreground">{loadingMessage}</p>
-							{import.meta.env.DEV && (
-								<p className="text-[11px] text-muted-foreground">
-									Check `/api/shapes/sessions` headers and status in DevTools.
-								</p>
-							)}
 							<div className="flex items-center justify-center gap-2">
 								<button
 									type="button"

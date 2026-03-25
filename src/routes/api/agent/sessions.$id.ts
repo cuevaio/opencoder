@@ -18,8 +18,14 @@ export const Route = createFileRoute("/api/agent/sessions/$id")({
 				// Extract the id param from the URL
 				const url = new URL(request.url);
 				const segments = url.pathname.split("/");
-				const idParam = segments[segments.length - 1];
-				const sessionId = Number.parseInt(idParam!, 10);
+				const idParam = segments.at(-1);
+				if (!idParam) {
+					return Response.json(
+						{ error: "Invalid session ID" },
+						{ status: 400 },
+					);
+				}
+				const sessionId = Number.parseInt(idParam, 10);
 
 				if (Number.isNaN(sessionId)) {
 					return Response.json(

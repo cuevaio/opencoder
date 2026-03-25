@@ -22,11 +22,6 @@ interface SessionEventsPrefetchManager {
 	destroy: () => Promise<void>;
 }
 
-function logPrefetch(event: string, details: Record<string, unknown>) {
-	if (!import.meta.env.DEV) return;
-	console.info(`[session-prefetch] ${event}`, details);
-}
-
 export function createSessionEventsPrefetchManager(
 	options?: SessionEventsPrefetchManagerOptions,
 ): SessionEventsPrefetchManager {
@@ -51,7 +46,7 @@ export function createSessionEventsPrefetchManager(
 
 	async function cleanupEntry(
 		sessionId: number,
-		reason: string,
+		_reason: string,
 	): Promise<void> {
 		const entry = entries.get(sessionId);
 		if (!entry) return;
@@ -62,7 +57,6 @@ export function createSessionEventsPrefetchManager(
 
 		entries.delete(sessionId);
 		await entry.collection.cleanup();
-		logPrefetch("cleanup", { sessionId, reason });
 	}
 
 	function getOldestPrefetchedSession(): number | null {
@@ -95,7 +89,6 @@ export function createSessionEventsPrefetchManager(
 			const effectiveActiveSessionId =
 				typeof activeOverride === "number" ? activeOverride : activeSessionId;
 			if (sessionId === effectiveActiveSessionId) {
-				logPrefetch("skip-active", { sessionId });
 				return;
 			}
 
@@ -103,7 +96,6 @@ export function createSessionEventsPrefetchManager(
 			if (existing) {
 				existing.lastTouchedAt = Date.now();
 				scheduleExpiry(existing);
-				logPrefetch("hit", { sessionId });
 				await existing.preloadPromise;
 				return;
 			}
@@ -120,15 +112,11 @@ export function createSessionEventsPrefetchManager(
 			};
 
 			entry.preloadPromise = collection.preload().catch((error: unknown) => {
-				logPrefetch("error", {
-					sessionId,
-					error: error instanceof Error ? error.message : String(error),
-				});
+				void error;
 			});
 
 			entries.set(sessionId, entry);
 			scheduleExpiry(entry);
-			logPrefetch("start", { sessionId });
 			await entry.preloadPromise;
 		},
 		setActiveSession: (sessionId: number | null) => {

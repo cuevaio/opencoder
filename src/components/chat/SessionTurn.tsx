@@ -24,9 +24,6 @@ export function SessionTurn({
 			if (!(target instanceof HTMLFormElement)) return;
 
 			event.preventDefault();
-			if (import.meta.env.DEV) {
-				console.info("[chat-link] blocked delegated form submit");
-			}
 		},
 		[],
 	);

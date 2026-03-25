@@ -24,23 +24,15 @@ interface ElectricCollectionOptions {
 	onError?: (error: unknown) => void;
 }
 
-/** Handle Electric client errors. Logs in dev, suppresses in prod. */
+/** Handle Electric client errors and optionally notify caller. */
 function onElectricError(
 	error: unknown,
 	context: ElectricCollectionContext,
 	handler?: (error: unknown) => void,
 ) {
-	if (import.meta.env.DEV) {
-		// Log in dev so must-refetch, 4xx, and other issues are visible
-		console.warn("[Electric] Collection sync error", {
-			error,
-			collectionId: context.collectionId,
-			shapeUrl: context.shapeUrl,
-			sessionId: context.sessionId,
-		});
-	}
+	void error;
+	void context;
 	handler?.(error);
-	// In prod, suppress noisy 401s during auth init and StrictMode double-mount
 }
 
 /**
