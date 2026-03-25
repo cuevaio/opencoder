@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "vite dev --port 3000",
     "build": "vite build",
+    "start": "node .output/server/index.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "format": "biome format",
@@ -74,6 +75,7 @@
     "babel-plugin-react-compiler": "^1.0.0",
     "dotenv": "^17.3.1",
     "jsdom": "^28.1.0",
+    "nitro": "^3.0.260311-beta",
     "tsx": "^4.21.0",
     "typescript": "^5.7.2",
     "vite": "^7.3.1",
