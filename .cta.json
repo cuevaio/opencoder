@@ -1,0 +1,33 @@
+{
+  "projectName": "opencoder",
+  "mode": "file-router",
+  "typescript": true,
+  "packageManager": "npm",
+  "includeExamples": true,
+  "tailwind": true,
+  "addOnOptions": {
+    "drizzle": {
+      "database": "postgresql"
+    }
+  },
+  "envVarValues": {},
+  "git": true,
+  "routerOnly": false,
+  "version": 1,
+  "framework": "react",
+  "chosenAddOns": [
+    "biome",
+    "neon",
+    "db",
+    "drizzle",
+    "form",
+    "shadcn",
+    "better-auth",
+    "posthog",
+    "tanstack-query",
+    "ai",
+    "compiler",
+    "events",
+    "store"
+  ]
+}

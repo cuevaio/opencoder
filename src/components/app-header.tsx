@@ -1,0 +1,143 @@
+import { Link, useNavigate } from "@tanstack/react-router";
+import { Menu, X } from "lucide-react";
+import { useState } from "react";
+import { authClient } from "#/lib/auth-client.ts";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "./ui/sheet.tsx";
+
+interface AppHeaderProps {
+	/** "public" shows sign-in link; "authed" shows Chat/Dashboard/Sign out */
+	variant?: "public" | "authed";
+}
+
+export function AppHeader({ variant = "public" }: AppHeaderProps) {
+	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+	const navigate = useNavigate();
+
+	const handleSignOut = () => {
+		authClient.signOut({
+			fetchOptions: {
+				onSuccess: () => {
+					void navigate({ to: "/" });
+				},
+			},
+		});
+	};
+
+	return (
+		<header className="border-b border-border pt-safe">
+			<div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
+				{/* Logo */}
+				<Link to="/" className="font-semibold text-foreground press-scale">
+					OpenCoder
+				</Link>
+
+				{/* Desktop nav */}
+				<nav className="hidden items-center gap-4 md:flex">
+					{variant === "authed" ? (
+						<>
+							<Link
+								to="/chat"
+								className="text-sm font-medium text-foreground hover:text-muted-foreground"
+							>
+								Chat
+							</Link>
+							<Link
+								to="/dashboard"
+								className="text-sm font-medium text-foreground hover:text-muted-foreground"
+							>
+								Dashboard
+							</Link>
+							<button
+								type="button"
+								onClick={handleSignOut}
+								className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted press-scale"
+							>
+								Sign out
+							</button>
+						</>
+					) : (
+						<Link
+							to="/sign-in"
+							className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background hover:opacity-90 press-scale"
+						>
+							Sign in with GitHub
+						</Link>
+					)}
+				</nav>
+
+				{/* Mobile hamburger */}
+				<button
+					type="button"
+					onClick={() => setMobileMenuOpen(true)}
+					className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-foreground hover:bg-muted md:hidden press-scale"
+					aria-label="Open navigation menu"
+				>
+					<Menu className="h-5 w-5" />
+				</button>
+			</div>
+
+			{/* Mobile nav sheet */}
+			<Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+				<SheetContent
+					side="right"
+					showCloseButton={false}
+					className="w-[280px] p-0"
+				>
+					<SheetHeader className="border-b border-border px-4 py-4">
+						<div className="flex items-center justify-between">
+							<SheetTitle className="font-semibold">OpenCoder</SheetTitle>
+							<button
+								type="button"
+								onClick={() => setMobileMenuOpen(false)}
+								className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-muted-foreground hover:bg-muted press-scale"
+								aria-label="Close navigation menu"
+							>
+								<X className="h-5 w-5" />
+							</button>
+						</div>
+					</SheetHeader>
+
+					<nav className="flex flex-col gap-1 p-3">
+						{variant === "authed" ? (
+							<>
+								<Link
+									to="/chat"
+									onClick={() => setMobileMenuOpen(false)}
+									className="flex min-h-[44px] items-center rounded-lg px-4 py-3 text-base font-medium text-foreground hover:bg-muted press-scale"
+								>
+									Chat
+								</Link>
+								<Link
+									to="/dashboard"
+									onClick={() => setMobileMenuOpen(false)}
+									className="flex min-h-[44px] items-center rounded-lg px-4 py-3 text-base font-medium text-foreground hover:bg-muted press-scale"
+								>
+									Dashboard
+								</Link>
+								<div className="my-2 border-t border-border" />
+								<button
+									type="button"
+									onClick={() => {
+										setMobileMenuOpen(false);
+										handleSignOut();
+									}}
+									className="flex min-h-[44px] items-center rounded-lg px-4 py-3 text-base font-medium text-foreground hover:bg-muted press-scale"
+								>
+									Sign out
+								</button>
+							</>
+						) : (
+							<Link
+								to="/sign-in"
+								onClick={() => setMobileMenuOpen(false)}
+								className="flex min-h-[44px] items-center rounded-lg bg-foreground px-4 py-3 text-base font-medium text-background hover:opacity-90 press-scale"
+							>
+								Sign in with GitHub
+							</Link>
+						)}
+					</nav>
+				</SheetContent>
+			</Sheet>
+		</header>
+	);
+}

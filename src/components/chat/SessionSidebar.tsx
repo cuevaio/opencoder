@@ -1,0 +1,150 @@
+import type { Collection } from "@tanstack/react-db";
+import { useLiveQuery } from "@tanstack/react-db";
+import { useParams } from "@tanstack/react-router";
+import { Plus } from "lucide-react";
+
+interface SessionSidebarProps {
+	// Collection passed from the parent layout so it's shared and not re-created
+	sessionsCollection: Collection<
+		Record<string, unknown>,
+		string | number,
+		// biome-ignore lint/suspicious/noExplicitAny: Electric collection utils type is opaque
+		any
+	>;
+	onSelectSession: (id: number) => void;
+	onNewSession: () => void;
+	onPrefetchSessionEvents?: (id: number) => void;
+}
+
+export function SessionSidebar({
+	sessionsCollection,
+	onSelectSession,
+	onNewSession,
+	onPrefetchSessionEvents,
+}: SessionSidebarProps) {
+	// Derive active session from URL params
+	// biome-ignore lint/suspicious/noExplicitAny: params type resolves after routeTree regen
+	const params = useParams({ strict: false }) as any;
+	const activeSessionId = params?.sessionId ? Number(params.sessionId) : null;
+	const { data: sessions, isLoading } = useLiveQuery(
+		(q) =>
+			q
+				.from({ s: sessionsCollection })
+				.orderBy(({ s }) => s.created_at as string, "desc")
+				.limit(50),
+		[sessionsCollection],
+	);
+
+	return (
+		<div className="flex h-full flex-col border-r border-border bg-background">
+			{/* Sidebar header */}
+			<div className="flex items-center justify-between border-b border-border px-3 py-2">
+				<span className="text-xs font-semibold text-foreground">Sessions</span>
+				<button
+					type="button"
+					onClick={onNewSession}
+					className="flex min-h-[36px] min-w-[36px] items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground press-scale"
+					title="New session"
+					aria-label="New session"
+				>
+					<Plus className="h-4 w-4" />
+				</button>
+			</div>
+
+			{/* Session list */}
+			<div className="flex-1 overflow-y-auto">
+				{isLoading && (
+					<div className="px-3 py-4 text-xs text-muted-foreground">
+						Loading...
+					</div>
+				)}
+
+				{!isLoading && (!sessions || sessions.length === 0) && (
+					<div className="px-3 py-4 text-xs text-muted-foreground">
+						No sessions yet
+					</div>
+				)}
+
+				{sessions?.map((session, i) => {
+					const id = session.id as number;
+					const status = session.status as string;
+					const title = (session.title as string) || "Untitled";
+					const repoFullName = session.repo_full_name as string;
+					const createdAt = session.created_at as string;
+					const toolCallCount = session.tool_call_count as number | null;
+
+					return (
+						<button
+							type="button"
+							key={id}
+							onClick={() => onSelectSession(id)}
+							onPointerEnter={(event) => {
+								if (event.pointerType !== "mouse") return;
+								if (activeSessionId === id) return;
+								onPrefetchSessionEvents?.(id);
+							}}
+							onFocus={() => {
+								if (activeSessionId === id) return;
+								onPrefetchSessionEvents?.(id);
+							}}
+							className={`w-full border-b border-border px-3 py-3 text-left transition-colors hover:bg-muted press-scale animate-in fade-in-0 duration-200 ${
+								activeSessionId === id ? "bg-muted" : ""
+							}`}
+							style={{ animationDelay: `${Math.min(i * 30, 300)}ms` }}
+						>
+							<div className="flex items-center gap-1.5">
+								{status === "running" && (
+									<span className="inline-block h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-blue-500" />
+								)}
+								{status === "idle" && (
+									<span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-green-500" />
+								)}
+								<span className="truncate text-xs font-medium text-foreground">
+									{title}
+								</span>
+							</div>
+							<div className="mt-0.5 truncate text-[10px] text-muted-foreground">
+								{repoFullName}
+							</div>
+							<div className="mt-0.5 flex items-center gap-2 text-[10px] text-muted-foreground">
+								<span>{formatRelativeTime(createdAt)}</span>
+								{status === "running" ? (
+									<span className="text-blue-600 dark:text-blue-400">
+										Running
+									</span>
+								) : status === "idle" ? (
+									<span className="text-green-600 dark:text-green-400">
+										Idle
+									</span>
+								) : status === "failed" ? (
+									<span className="text-red-500">Failed</span>
+								) : (
+									toolCallCount != null && <span>{toolCallCount} tools</span>
+								)}
+							</div>
+						</button>
+					);
+				})}
+			</div>
+		</div>
+	);
+}
+
+function formatRelativeTime(dateStr: string): string {
+	if (!dateStr) return "";
+	const date = new Date(dateStr);
+	const now = new Date();
+	const diffMs = now.getTime() - date.getTime();
+	const diffMins = Math.floor(diffMs / 60_000);
+
+	if (diffMins < 1) return "just now";
+	if (diffMins < 60) return `${diffMins}m ago`;
+
+	const diffHours = Math.floor(diffMins / 60);
+	if (diffHours < 24) return `${diffHours}h ago`;
+
+	const diffDays = Math.floor(diffHours / 24);
+	if (diffDays < 7) return `${diffDays}d ago`;
+
+	return date.toLocaleDateString();
+}
