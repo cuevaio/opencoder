@@ -48,8 +48,14 @@ export type RunSessionPayload = z.infer<typeof runSessionSchema>;
 export const runSession = schemaTask({
 	id: "run-session",
 	schema: runSessionSchema,
+	machine: "medium-2x",
 	maxDuration: 3600,
-	retry: { maxAttempts: 1 },
+	retry: {
+		maxAttempts: 1,
+		outOfMemory: {
+			machine: "large-1x",
+		},
+	},
 	run: async (payload, { ctx }) => {
 		const runId = ctx.run.id;
 		const abortController = new AbortController();
