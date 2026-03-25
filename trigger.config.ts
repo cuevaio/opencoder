@@ -26,7 +26,7 @@ function opencodeBinary(): BuildExtension {
 }
 
 export default defineConfig({
-  project: "proj_cmuxmxkeawsvygzunxxi",
+  project: process.env.TRIGGER_PROJECT_ID!,
   runtime: "node",
   logLevel: "log",
   dirs: ["./src/trigger"],
