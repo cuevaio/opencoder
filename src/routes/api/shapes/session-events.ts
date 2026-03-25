@@ -80,9 +80,9 @@ export const Route = createFileRoute("/api/shapes/session-events")({
 				shapeUrl.searchParams.set("secret", electricSecret);
 				shapeUrl.searchParams.set("table", "session_events");
 				shapeUrl.searchParams.set("where", `session_id = ${session.id}`);
-				// Exclude heavy JSONB columns not needed for live display.
-				// part_data/tool_input/tool_metadata are only used for session replay
-				// and the converter falls back to flat columns for standard types.
+				// Keep payload light for live display.
+				// We include part_data as a fallback for reasoning reconstruction,
+				// while still excluding tool_input/tool_metadata.
 				shapeUrl.searchParams.set(
 					"columns",
 					[
@@ -113,6 +113,7 @@ export const Route = createFileRoute("/api/shapes/session-events")({
 						"message_tokens_reasoning",
 						"message_cost",
 						"user_message_text",
+						"part_data",
 						"created_at",
 						"updated_at",
 					].join(","),

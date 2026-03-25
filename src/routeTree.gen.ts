@@ -21,6 +21,7 @@ import { Route as ApiShapesSessionEventsRouteImport } from './routes/api/shapes/
 import { Route as ApiGithubReposRouteImport } from './routes/api/github/repos'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiAgentSessionsRouteImport } from './routes/api/agent/sessions'
+import { Route as ApiAgentSessionReasoningRouteImport } from './routes/api/agent/session-reasoning'
 import { Route as ApiAgentRunRouteImport } from './routes/api/agent/run'
 import { Route as ApiAgentKeysRouteImport } from './routes/api/agent/keys'
 import { Route as ApiAgentContinueRouteImport } from './routes/api/agent/continue'
@@ -88,6 +89,12 @@ const ApiAgentSessionsRoute = ApiAgentSessionsRouteImport.update({
   path: '/api/agent/sessions',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAgentSessionReasoningRoute =
+  ApiAgentSessionReasoningRouteImport.update({
+    id: '/api/agent/session-reasoning',
+    path: '/api/agent/session-reasoning',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiAgentRunRoute = ApiAgentRunRouteImport.update({
   id: '/api/agent/run',
   path: '/api/agent/run',
@@ -135,6 +142,7 @@ export interface FileRoutesByFullPath {
   '/api/agent/continue': typeof ApiAgentContinueRoute
   '/api/agent/keys': typeof ApiAgentKeysRoute
   '/api/agent/run': typeof ApiAgentRunRoute
+  '/api/agent/session-reasoning': typeof ApiAgentSessionReasoningRoute
   '/api/agent/sessions': typeof ApiAgentSessionsRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/github/repos': typeof ApiGithubReposRoute
@@ -154,6 +162,7 @@ export interface FileRoutesByTo {
   '/api/agent/continue': typeof ApiAgentContinueRoute
   '/api/agent/keys': typeof ApiAgentKeysRoute
   '/api/agent/run': typeof ApiAgentRunRoute
+  '/api/agent/session-reasoning': typeof ApiAgentSessionReasoningRoute
   '/api/agent/sessions': typeof ApiAgentSessionsRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/github/repos': typeof ApiGithubReposRoute
@@ -176,6 +185,7 @@ export interface FileRoutesById {
   '/api/agent/continue': typeof ApiAgentContinueRoute
   '/api/agent/keys': typeof ApiAgentKeysRoute
   '/api/agent/run': typeof ApiAgentRunRoute
+  '/api/agent/session-reasoning': typeof ApiAgentSessionReasoningRoute
   '/api/agent/sessions': typeof ApiAgentSessionsRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/github/repos': typeof ApiGithubReposRoute
@@ -198,6 +208,7 @@ export interface FileRouteTypes {
     | '/api/agent/continue'
     | '/api/agent/keys'
     | '/api/agent/run'
+    | '/api/agent/session-reasoning'
     | '/api/agent/sessions'
     | '/api/auth/$'
     | '/api/github/repos'
@@ -217,6 +228,7 @@ export interface FileRouteTypes {
     | '/api/agent/continue'
     | '/api/agent/keys'
     | '/api/agent/run'
+    | '/api/agent/session-reasoning'
     | '/api/agent/sessions'
     | '/api/auth/$'
     | '/api/github/repos'
@@ -238,6 +250,7 @@ export interface FileRouteTypes {
     | '/api/agent/continue'
     | '/api/agent/keys'
     | '/api/agent/run'
+    | '/api/agent/session-reasoning'
     | '/api/agent/sessions'
     | '/api/auth/$'
     | '/api/github/repos'
@@ -257,6 +270,7 @@ export interface RootRouteChildren {
   ApiAgentContinueRoute: typeof ApiAgentContinueRoute
   ApiAgentKeysRoute: typeof ApiAgentKeysRoute
   ApiAgentRunRoute: typeof ApiAgentRunRoute
+  ApiAgentSessionReasoningRoute: typeof ApiAgentSessionReasoningRoute
   ApiAgentSessionsRoute: typeof ApiAgentSessionsRouteWithChildren
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiGithubReposRoute: typeof ApiGithubReposRoute
@@ -349,6 +363,13 @@ declare module '@tanstack/react-router' {
       path: '/api/agent/sessions'
       fullPath: '/api/agent/sessions'
       preLoaderRoute: typeof ApiAgentSessionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/agent/session-reasoning': {
+      id: '/api/agent/session-reasoning'
+      path: '/api/agent/session-reasoning'
+      fullPath: '/api/agent/session-reasoning'
+      preLoaderRoute: typeof ApiAgentSessionReasoningRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/agent/run': {
@@ -450,6 +471,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAgentContinueRoute: ApiAgentContinueRoute,
   ApiAgentKeysRoute: ApiAgentKeysRoute,
   ApiAgentRunRoute: ApiAgentRunRoute,
+  ApiAgentSessionReasoningRoute: ApiAgentSessionReasoningRoute,
   ApiAgentSessionsRoute: ApiAgentSessionsRouteWithChildren,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiGithubReposRoute: ApiGithubReposRoute,

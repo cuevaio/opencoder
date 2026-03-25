@@ -21,7 +21,12 @@ function NewSessionPage() {
 	const { setSidebarOpen } = useChatLayoutContext();
 
 	const handleSubmit = useCallback(
-		async (prompt: string, mode: "plan" | "build", model: string) => {
+		async (
+			prompt: string,
+			mode: "plan" | "build",
+			model: string,
+			variant: string,
+		) => {
 			if (!repoUrl.trim() || !prompt.trim()) return;
 
 			setIsSubmitting(true);
@@ -36,6 +41,7 @@ function NewSessionPage() {
 						prompt: prompt.trim(),
 						mode,
 						model,
+						variant,
 					}),
 				});
 

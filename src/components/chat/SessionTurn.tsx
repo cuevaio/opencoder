@@ -75,6 +75,7 @@ function TurnItem({
 			);
 
 		case "reasoning-block":
+			if (!item.text.trim()) return null;
 			return (
 				<details className="rounded-lg border border-border/70 bg-surface-1 px-3 py-2 text-xs text-muted-foreground">
 					<summary className="cursor-pointer font-medium hover:text-foreground">

@@ -3,7 +3,11 @@ import { tasks } from "@trigger.dev/sdk/v3";
 import { eq } from "drizzle-orm";
 import { db } from "#/db/index.ts";
 import { agentSessions as sessions } from "#/db/schema.ts";
-import { isAllowedModel, normalizeModelId } from "#/lib/ai/model-registry.ts";
+import {
+	isAllowedModel,
+	normalizeModelId,
+	normalizeVariant,
+} from "#/lib/ai/model-registry.ts";
 import { canExecuteModel } from "#/lib/ai/provider-keys.ts";
 import { validateAgentAuth } from "#/lib/auth-helpers.ts";
 import type { runSession } from "#/trigger/run-session.ts";
@@ -89,6 +93,7 @@ export const Route = createFileRoute("/api/agent/run")({
 					prompt?: string;
 					mode?: "plan" | "build";
 					model?: string;
+					variant?: string;
 				};
 				const { repoUrl, prompt, mode } = body;
 				if (body.model && !isAllowedModel(body.model)) {
@@ -98,6 +103,7 @@ export const Route = createFileRoute("/api/agent/run")({
 					);
 				}
 				const model = normalizeModelId(body.model);
+				const variant = normalizeVariant(model, body.variant);
 
 				if (!repoUrl || !prompt) {
 					return Response.json(
@@ -143,6 +149,7 @@ export const Route = createFileRoute("/api/agent/run")({
 								initialPrompt: prompt,
 								mode: mode || "build",
 								selectedModel: model,
+								selectedVariant: variant,
 								status: "running",
 							})
 							.returning({ id: sessions.id });
@@ -160,6 +167,7 @@ export const Route = createFileRoute("/api/agent/run")({
 						prompt,
 						mode: mode || "build",
 						model,
+						variant,
 						githubToken,
 						userId,
 						dbSessionId: createdSessionId,

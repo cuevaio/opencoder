@@ -26,7 +26,12 @@ function ChatSessionPage() {
 	}, [navigate]);
 
 	const handleFollowup = useCallback(
-		async (prompt: string, mode: "plan" | "build", model: string) => {
+		async (
+			prompt: string,
+			mode: "plan" | "build",
+			model: string,
+			variant: string,
+		) => {
 			setIsSubmitting(true);
 			setError(null);
 
@@ -34,7 +39,7 @@ function ChatSessionPage() {
 				const response = await fetch("/api/agent/continue", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ sessionId, prompt, mode, model }),
+					body: JSON.stringify({ sessionId, prompt, mode, model, variant }),
 				});
 
 				const data = (await response.json()) as { error?: string };

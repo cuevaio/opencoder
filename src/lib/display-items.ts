@@ -47,6 +47,11 @@ export type Turn = {
 	items: DisplayItem[];
 };
 
+type RootSessionDiscovery = {
+	rootSessionId?: string;
+	confident: boolean;
+};
+
 // ─── Build tool map from StreamEvent[] ───────────────────
 
 /**
@@ -63,8 +68,12 @@ export function buildToolMap(
 	const map = new Map<string, ToolState>();
 	if (!events) return map;
 
-	// Discover root session ID from the first part-update event
-	const effectiveRootSessionId = rootSessionId ?? discoverRootSessionId(events);
+	const discovery = rootSessionId
+		? { rootSessionId, confident: true }
+		: discoverRootSessionId(events);
+	const effectiveRootSessionId = discovery.rootSessionId;
+	const shouldFilterChildSessions =
+		discovery.confident && !!effectiveRootSessionId;
 
 	// ── Pass 1: Build sessionID → parent callID mapping ─────
 	// Find all "task" tools in the root session (ordered by appearance).
@@ -72,7 +81,7 @@ export function buildToolMap(
 	// Correlate them: the Nth unique child session belongs to the Nth task tool.
 	const sessionToParentCallId = new Map<string, string>();
 
-	if (effectiveRootSessionId) {
+	if (shouldFilterChildSessions) {
 		const taskToolCallIds: string[] = [];
 		const childSessionIds: string[] = [];
 		const seenChildSessions = new Set<string>();
@@ -118,7 +127,9 @@ export function buildToolMap(
 		const { part, delta } = evt;
 
 		const isChildSession =
-			effectiveRootSessionId && part.sessionID !== effectiveRootSessionId;
+			shouldFilterChildSessions &&
+			effectiveRootSessionId !== undefined &&
+			part.sessionID !== effectiveRootSessionId;
 		const parentCallId = isChildSession
 			? sessionToParentCallId.get(part.sessionID)
 			: undefined;
@@ -176,7 +187,12 @@ export function buildDisplayItems(
 	// Track latest text/reasoning part IDs to avoid duplicate text blocks
 	const seenPartIds = new Set<string>();
 
-	const effectiveRootSessionId = rootSessionId ?? discoverRootSessionId(events);
+	const discovery = rootSessionId
+		? { rootSessionId, confident: true }
+		: discoverRootSessionId(events);
+	const effectiveRootSessionId = discovery.rootSessionId;
+	const shouldFilterChildSessions =
+		discovery.confident && !!effectiveRootSessionId;
 
 	for (const evt of events) {
 		switch (evt.type) {
@@ -185,7 +201,8 @@ export function buildDisplayItems(
 
 				// Skip child-session parts (handled via toolMap)
 				if (
-					effectiveRootSessionId &&
+					shouldFilterChildSessions &&
+					effectiveRootSessionId !== undefined &&
 					part.sessionID !== effectiveRootSessionId
 				) {
 					continue;
@@ -221,10 +238,15 @@ export function buildDisplayItems(
 							}
 						}
 					} else {
+						const text = delta || part.text;
+						if (!text.trim()) {
+							break;
+						}
+
 						seenPartIds.add(part.id);
 						items.push({
 							type: "reasoning-block",
-							text: delta || part.text,
+							text,
 							partId: part.id,
 						});
 					}
@@ -384,15 +406,35 @@ function partToToolState(part: Part & { type: "tool" }): ToolState {
 }
 
 /**
- * Discover the root session ID from the first part-update event.
+ * Discover root session ID.
+ *
+ * Preferred: a `task` tool part session (high confidence).
+ * Fallback: first part-update session (low confidence).
  */
-function discoverRootSessionId(events: StreamEvent[]): string | undefined {
+function discoverRootSessionId(events: StreamEvent[]): RootSessionDiscovery {
 	for (const evt of events) {
-		if (evt.type === "part-update") {
-			return evt.part.sessionID;
+		if (
+			evt.type === "part-update" &&
+			evt.part.type === "tool" &&
+			evt.part.tool === "task"
+		) {
+			return {
+				rootSessionId: evt.part.sessionID,
+				confident: true,
+			};
 		}
 	}
-	return undefined;
+
+	for (const evt of events) {
+		if (evt.type === "part-update") {
+			return {
+				rootSessionId: evt.part.sessionID,
+				confident: false,
+			};
+		}
+	}
+
+	return { confident: false };
 }
 
 function findLastDisplayItemByPartId(

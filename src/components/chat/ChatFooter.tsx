@@ -1,6 +1,10 @@
 import { SendHorizontal, SlidersHorizontal, Square } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { modelOptions } from "#/lib/ai/model-registry.ts";
+import {
+	getDefaultVariant,
+	getModelOption,
+	modelOptions,
+} from "#/lib/ai/model-registry.ts";
 import { Button } from "../ui/button.tsx";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover.tsx";
 import {
@@ -15,7 +19,12 @@ import { Textarea } from "../ui/textarea.tsx";
 const CREATE_PR_PROMPT = "create pr";
 
 interface ChatFooterProps {
-	onSubmit: (text: string, mode: "plan" | "build", model: string) => void;
+	onSubmit: (
+		text: string,
+		mode: "plan" | "build",
+		model: string,
+		variant: string,
+	) => void;
 	onCancel?: () => void;
 	onEndSession?: () => void;
 	isWorking?: boolean;
@@ -23,6 +32,7 @@ interface ChatFooterProps {
 	disabled?: boolean;
 	defaultMode?: "plan" | "build";
 	defaultModel?: string;
+	defaultVariant?: string;
 	placeholder?: string;
 }
 
@@ -35,12 +45,16 @@ export function ChatFooter({
 	disabled = false,
 	defaultMode = "build",
 	defaultModel,
+	defaultVariant,
 	placeholder = "Describe what you want to do...",
 }: ChatFooterProps) {
 	const [text, setText] = useState("");
 	const [advancedOpen, setAdvancedOpen] = useState(false);
 	const [mode, setMode] = useState<"plan" | "build">(defaultMode);
 	const [model, setModel] = useState(defaultModel ?? modelOptions[0]?.id ?? "");
+	const [variant, setVariant] = useState(
+		defaultVariant ?? getDefaultVariant(model),
+	);
 
 	useEffect(() => {
 		if (defaultModel) {
@@ -48,17 +62,36 @@ export function ChatFooter({
 		}
 	}, [defaultModel]);
 
+	useEffect(() => {
+		if (defaultVariant) {
+			setVariant(defaultVariant);
+		}
+	}, [defaultVariant]);
+
+	// When model changes, reset variant to the new model's default
+	// (unless the current variant is still valid for the new model)
+	const handleModelChange = useCallback(
+		(newModel: string) => {
+			setModel(newModel);
+			const option = getModelOption(newModel);
+			if (option && !option.variants.includes(variant)) {
+				setVariant(option.defaultVariant);
+			}
+		},
+		[variant],
+	);
+
 	const handleSubmit = useCallback(() => {
 		if (!text.trim() || isSubmitting || disabled || isWorking) return;
-		onSubmit(text.trim(), mode, model);
+		onSubmit(text.trim(), mode, model, variant);
 		setText("");
-	}, [text, mode, model, isSubmitting, disabled, isWorking, onSubmit]);
+	}, [text, mode, model, variant, isSubmitting, disabled, isWorking, onSubmit]);
 
 	const handleCreatePrSubmit = useCallback(() => {
 		if (isSubmitting || disabled || isWorking) return;
-		onSubmit(CREATE_PR_PROMPT, mode, model);
+		onSubmit(CREATE_PR_PROMPT, mode, model, variant);
 		setAdvancedOpen(false);
-	}, [mode, model, isSubmitting, disabled, isWorking, onSubmit]);
+	}, [mode, model, variant, isSubmitting, disabled, isWorking, onSubmit]);
 
 	const handleCancel = useCallback(() => {
 		if (!isWorking || !onCancel || disabled || isSubmitting) return;
@@ -74,6 +107,9 @@ export function ChatFooter({
 		},
 		[handleSubmit],
 	);
+
+	const currentModelOption = getModelOption(model);
+	const availableVariants = currentModelOption?.variants ?? [];
 
 	return (
 		<div className="space-y-2">
@@ -111,7 +147,7 @@ export function ChatFooter({
 								<span className="text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
 									Model
 								</span>
-								<Select value={model} onValueChange={setModel}>
+								<Select value={model} onValueChange={handleModelChange}>
 									<SelectTrigger
 										size="sm"
 										className="h-9 w-full min-w-0 text-xs"
@@ -128,6 +164,31 @@ export function ChatFooter({
 									</SelectContent>
 								</Select>
 							</div>
+
+							{availableVariants.length > 0 && (
+								<div className="space-y-1">
+									<span className="text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
+										Thinking
+									</span>
+									<div className="flex flex-wrap gap-1">
+										{availableVariants.map((v) => (
+											<button
+												key={v}
+												type="button"
+												onClick={() => setVariant(v)}
+												disabled={isSubmitting || disabled || isWorking}
+												className={`rounded-md px-2.5 py-1.5 text-[11px] font-medium press-scale disabled:opacity-50 ${
+													variant === v
+														? "bg-foreground text-background"
+														: "bg-surface-1 text-muted-foreground hover:bg-muted"
+												}`}
+											>
+												{v}
+											</button>
+										))}
+									</div>
+								</div>
+							)}
 
 							<div className="space-y-1">
 								<span className="text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">

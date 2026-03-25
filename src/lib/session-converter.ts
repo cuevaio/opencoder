@@ -211,6 +211,22 @@ export function dbRowsToStreamEvents(rows: SessionEventRow[]): StreamEvent[] {
 	return events;
 }
 
+function extractText(value: unknown): string | null {
+	if (!value || typeof value !== "object") return null;
+	if (!("text" in value)) return null;
+	if (typeof value.text !== "string") return null;
+	return value.text;
+}
+
+function extractTimeStart(value: unknown): number | null {
+	if (!value || typeof value !== "object") return null;
+	if (!("time" in value)) return null;
+	if (!value.time || typeof value.time !== "object") return null;
+	if (!("start" in value.time)) return null;
+	if (typeof value.time.start !== "number") return null;
+	return value.time.start;
+}
+
 /**
  * Reconstruct a Part object from a session_events row.
  * For tool parts, builds the discriminated union state.
@@ -235,13 +251,19 @@ function reconstructPart(row: SessionEventRow): Part | null {
 		case "text":
 			return { ...base, type: "text", text: row.text ?? "" } as Part;
 
-		case "reasoning":
+		case "reasoning": {
+			const fallbackText = extractText(row.part_data);
+			const text = row.text?.trim() ? row.text : (fallbackText ?? "");
+			const start =
+				extractTimeStart(row.part_data) ?? row.tool_time_start ?? Date.now();
+
 			return {
 				...base,
 				type: "reasoning",
-				text: row.text ?? "",
-				time: { start: row.tool_time_start ?? Date.now() },
+				text,
+				time: { start },
 			} as Part;
+		}
 
 		case "tool": {
 			const status = row.tool_status ?? "pending";

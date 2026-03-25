@@ -35,6 +35,8 @@ const runSessionSchema = z.object({
 	prompt: z.string().min(1),
 	mode: z.enum(["plan", "build"]).default("build"),
 	model: modelIdSchema.default(defaultModel),
+	/** Reasoning/thinking variant (e.g. "max", "high", "medium"). */
+	variant: z.string().min(1).default("max"),
 	githubToken: z.string().min(1),
 	userId: z.string().min(1),
 	/** DB session ID — created by the API route before triggering the task */
@@ -215,7 +217,8 @@ export const runSession = schemaTask({
 				// Write the user prompt as the first user-message event
 				await dbWriter.writeUserMessage(payload.prompt);
 
-				// Send the prompt
+				// Send the prompt with user-selected reasoning variant.
+				// OpenCode ignores the variant for models without reasoning capability.
 				await client.session.promptAsync({
 					sessionID: sessionId,
 					model: {
@@ -224,6 +227,7 @@ export const runSession = schemaTask({
 					},
 					parts: [{ type: "text", text: payload.prompt }],
 					agent: payload.mode,
+					variant: payload.variant,
 				});
 
 				// Process SSE events (inner loop handles resubscribe)

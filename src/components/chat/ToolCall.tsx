@@ -36,6 +36,7 @@ export function ToolCall({ tool }: ToolCallProps) {
 	const hasOutput = tool.output && tool.output.length > 0;
 	const hasChildTools = tool.childTools && tool.childTools.size > 0;
 	const hasChildText = tool.childText && tool.childText.length > 0;
+	const hasChildReasoning = !!tool.childReasoning?.trim();
 
 	return (
 		<div className="rounded-xl border border-border/80 bg-surface-1 text-xs">
@@ -115,6 +116,17 @@ export function ToolCall({ tool }: ToolCallProps) {
 								</div>
 								<div className="max-h-60 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-background p-2 text-xs sm:max-h-40 sm:text-[11px]">
 									{tool.childText}
+								</div>
+							</div>
+						)}
+
+						{hasChildReasoning && (
+							<div>
+								<div className="mb-1 font-medium text-muted-foreground">
+									Subagent thinking
+								</div>
+								<div className="max-h-60 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-border/70 bg-surface-2 p-2 text-xs text-muted-foreground sm:max-h-40 sm:text-[11px]">
+									{tool.childReasoning}
 								</div>
 							</div>
 						)}

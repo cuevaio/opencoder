@@ -1,6 +1,9 @@
 import type { BuildExtension } from "@trigger.dev/build";
 import { aptGet } from "@trigger.dev/build/extensions/core";
 import { defineConfig } from "@trigger.dev/sdk";
+import { config } from "dotenv"
+
+config()
 
 const OPENCODE_LATEST_TARBALL_URL =
 	"https://github.com/anomalyco/opencode/releases/latest/download/opencode-linux-x64.tar.gz";

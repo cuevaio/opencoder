@@ -35,7 +35,12 @@ interface ChatViewProps {
 		any
 	>;
 	onNewSession: () => void;
-	onFollowup: (prompt: string, mode: "plan" | "build", model: string) => void;
+	onFollowup: (
+		prompt: string,
+		mode: "plan" | "build",
+		model: string,
+		variant: string,
+	) => void;
 	onRetrySync: () => void;
 	isSubmitting: boolean;
 	error: string | null;
@@ -114,11 +119,19 @@ export function ChatView({
 
 	// ─── Display pipeline ────────────────────────────────────
 	const initialPrompt = (effectiveSessionRow?.initial_prompt as string) ?? "";
+	const rootSessionId =
+		typeof effectiveSessionRow?.opencode_session_id === "string" &&
+		effectiveSessionRow.opencode_session_id.length > 0
+			? effectiveSessionRow.opencode_session_id
+			: undefined;
 
-	const toolMap = useMemo(() => buildToolMap(streamEvents), [streamEvents]);
+	const toolMap = useMemo(
+		() => buildToolMap(streamEvents, rootSessionId),
+		[streamEvents, rootSessionId],
+	);
 	const displayItems = useMemo(
-		() => buildDisplayItems(streamEvents, toolMap),
-		[streamEvents, toolMap],
+		() => buildDisplayItems(streamEvents, toolMap, rootSessionId),
+		[streamEvents, toolMap, rootSessionId],
 	);
 	const turns = useMemo(
 		() => splitIntoTurns(initialPrompt, displayItems),
@@ -262,11 +275,14 @@ export function ChatView({
 	const defaultModel =
 		(effectiveSessionRow.selected_model as string | undefined) ||
 		defaultModelId;
+	const defaultVariant =
+		(effectiveSessionRow.selected_variant as string | undefined) || undefined;
 	const handleCreateOrUpdatePr = () => {
 		onFollowup(
 			hasExistingPr ? UPDATE_PR_PROMPT : CREATE_PR_PROMPT,
 			defaultMode,
 			defaultModel,
+			defaultVariant ?? "max",
 		);
 	};
 	const totalTokens = effectiveSessionRow.total_tokens as
@@ -385,6 +401,7 @@ export function ChatView({
 								disabled={false}
 								defaultMode={defaultMode}
 								defaultModel={defaultModel}
+								defaultVariant={defaultVariant}
 								placeholder="Send a follow-up message..."
 							/>
 						</div>
