@@ -2,6 +2,7 @@ import type { Collection } from "@tanstack/react-db";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useParams } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
+import { ThemeToggle } from "#/components/theme-toggle.tsx";
 
 interface SessionSidebarProps {
 	// Collection passed from the parent layout so it's shared and not re-created
@@ -42,15 +43,18 @@ export function SessionSidebar({
 				<span className="text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
 					Sessions
 				</span>
-				<button
-					type="button"
-					onClick={onNewSession}
-					className="flex min-h-[40px] min-w-[40px] items-center justify-center rounded-md border border-border/70 bg-background/70 text-muted-foreground hover:bg-muted hover:text-foreground press-scale"
-					title="New session"
-					aria-label="New session"
-				>
-					<Plus className="h-4 w-4" />
-				</button>
+				<div className="flex items-center gap-2">
+					<ThemeToggle />
+					<button
+						type="button"
+						onClick={onNewSession}
+						className="flex min-h-[40px] min-w-[40px] items-center justify-center rounded-md border border-border/70 bg-background/70 text-muted-foreground hover:bg-muted hover:text-foreground press-scale"
+						title="New session"
+						aria-label="New session"
+					>
+						<Plus className="h-4 w-4" />
+					</button>
+				</div>
 			</div>
 
 			{/* Session list */}

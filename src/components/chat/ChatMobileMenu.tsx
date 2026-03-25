@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
+import { ThemeToggle } from "#/components/theme-toggle.tsx";
 import {
 	Sheet,
 	SheetContent,
@@ -53,6 +54,9 @@ export function ChatMobileMenu() {
 					</SheetHeader>
 
 					<nav className="flex flex-col gap-1 p-3">
+						<div className="mb-1 flex min-h-[48px] items-center rounded-lg bg-surface-1 px-4 py-3">
+							<ThemeToggle showLabel />
+						</div>
 						<Link
 							to="/"
 							onClick={() => setOpen(false)}

@@ -6,6 +6,8 @@ import {
 	Outlet,
 	Scripts,
 } from "@tanstack/react-router";
+import { ThemeProvider } from "#/components/theme-provider.tsx";
+import { THEME_INIT_SCRIPT } from "#/lib/theme.ts";
 import TanStackQueryProvider from "../integrations/tanstack-query/root-provider";
 import appCss from "../styles.css?url";
 
@@ -55,6 +57,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 	return (
 		<html lang="en" suppressHydrationWarning>
 			<head>
+				<script>{THEME_INIT_SCRIPT}</script>
 				<HeadContent />
 			</head>
 			<body className="font-sans antialiased">
@@ -68,7 +71,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 function RootLayout() {
 	return (
 		<TanStackQueryProvider>
-			<Outlet />
+			<ThemeProvider>
+				<Outlet />
+			</ThemeProvider>
 		</TanStackQueryProvider>
 	);
 }

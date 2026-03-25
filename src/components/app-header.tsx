@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
+import { ThemeToggle } from "#/components/theme-toggle.tsx";
 import { authClient } from "#/lib/auth-client.ts";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "./ui/sheet.tsx";
 
@@ -36,6 +37,7 @@ export function AppHeader({ variant = "public" }: AppHeaderProps) {
 
 				{/* Desktop nav */}
 				<nav className="hidden items-center gap-2 md:flex">
+					<ThemeToggle className="mr-1" />
 					{variant === "authed" ? (
 						<>
 							<Link
@@ -99,6 +101,9 @@ export function AppHeader({ variant = "public" }: AppHeaderProps) {
 					</SheetHeader>
 
 					<nav className="flex flex-col gap-1 p-3">
+						<div className="mb-1 flex min-h-[48px] items-center rounded-lg bg-surface-1 px-4 py-3">
+							<ThemeToggle showLabel />
+						</div>
 						{variant === "authed" ? (
 							<>
 								<Link
