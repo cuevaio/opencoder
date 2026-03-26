@@ -150,7 +150,7 @@ export function RepoSelector({
 				Repository
 			</label>
 
-			<div className="flex flex-col gap-2 sm:flex-row">
+			<div>
 				<Popover open={open} onOpenChange={setOpen}>
 					<PopoverTrigger asChild>
 						<Button
@@ -195,7 +195,27 @@ export function RepoSelector({
 								{filteredRepos.length > 0 && (
 									<CommandGroup
 										heading={
-											isFetching ? "Repositories (refreshing…)" : "Repositories"
+											<span className="flex items-center justify-between">
+												<span>
+													{isFetching
+														? "Repositories (refreshing…)"
+														: "Repositories"}
+												</span>
+												<button
+													type="button"
+													onClick={handleRefresh}
+													disabled={isFetching || disabled}
+													className="rounded p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-40"
+													title="Refresh repositories"
+												>
+													<RefreshCw
+														className={cn(
+															"size-3",
+															isFetching && "animate-spin",
+														)}
+													/>
+												</button>
+											</span>
 										}
 									>
 										{filteredRepos.map((repo) => (
@@ -238,17 +258,6 @@ export function RepoSelector({
 						</Command>
 					</PopoverContent>
 				</Popover>
-
-				<Button
-					variant="outline"
-					size="icon"
-					className="h-11 w-full shrink-0 sm:w-11"
-					onClick={handleRefresh}
-					disabled={isFetching || disabled}
-					title="Refresh repositories"
-				>
-					<RefreshCw className={cn("size-4", isFetching && "animate-spin")} />
-				</Button>
 			</div>
 
 			{error && (
