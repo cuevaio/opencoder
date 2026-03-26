@@ -1,7 +1,7 @@
 import type { Collection } from "@tanstack/react-db";
 import { useLiveQuery } from "@tanstack/react-db";
-import { useParams } from "@tanstack/react-router";
-import { Plus } from "lucide-react";
+import { useNavigate, useParams } from "@tanstack/react-router";
+import { LayoutDashboard, Plus } from "lucide-react";
 import { ThemeToggle } from "#/components/theme-toggle.tsx";
 
 interface SessionSidebarProps {
@@ -25,6 +25,7 @@ export function SessionSidebar({
 }: SessionSidebarProps) {
 	// Derive active session from URL params
 	// biome-ignore lint/suspicious/noExplicitAny: params type resolves after routeTree regen
+	const navigate = useNavigate();
 	const params = useParams({ strict: false }) as any;
 	const activeSessionId = params?.sessionId ? Number(params.sessionId) : null;
 	const { data: sessions, isLoading } = useLiveQuery(
@@ -44,6 +45,15 @@ export function SessionSidebar({
 					Sessions
 				</span>
 				<div className="flex items-center gap-2">
+					<button
+						type="button"
+						onClick={() => navigate({ to: "/dashboard" })}
+						className="flex min-h-[40px] min-w-[40px] items-center justify-center rounded-md border border-border/70 bg-background/70 text-muted-foreground hover:bg-muted hover:text-foreground press-scale"
+						title="Dashboard"
+						aria-label="Dashboard"
+					>
+						<LayoutDashboard className="h-4 w-4" />
+					</button>
 					<ThemeToggle />
 					<button
 						type="button"
