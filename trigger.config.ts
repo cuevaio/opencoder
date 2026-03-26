@@ -23,7 +23,7 @@ function ghCliBinary(): BuildExtension {
 							`&& curl -fsSL "https://github.com/cli/cli/releases/download/v\${GH_VERSION}/gh_\${GH_VERSION}_linux_amd64.tar.gz" ` +
 							`| tar -xzf - --strip-components=2 -C /usr/local/bin "gh_\${GH_VERSION}_linux_amd64/bin/gh" ` +
 							`&& chmod +x /usr/local/bin/gh ` +
-							`&& apt-get purge -y curl && apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/*`,
+							`&& apt-get clean && rm -rf /var/lib/apt/lists/*`,
 					],
 				},
 			});
@@ -50,7 +50,7 @@ function packageManagerBinaries(): BuildExtension {
 							`&& mv /tmp/bun/bun-linux-x64/bun /usr/local/bin/bun ` +
 							`&& chmod +x /usr/local/bin/bun ` +
 							`&& rm -rf /tmp/bun /tmp/bun.zip ` +
-							`&& apt-get purge -y curl unzip && apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/*`,
+							`&& apt-get purge -y unzip && apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/*`,
 					],
 				},
 			});
@@ -71,7 +71,7 @@ function opencodeBinary(): BuildExtension {
 					`RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates ` +
 						`&& curl -fsSL "${OPENCODE_LATEST_TARBALL_URL}" | tar -xzf - -C /usr/local/bin/ ` +
 						`&& chmod +x /usr/local/bin/opencode ` +
-						`&& apt-get purge -y curl && apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/*`,
+						`&& apt-get clean && rm -rf /var/lib/apt/lists/*`,
 				],
         },
       });
@@ -94,7 +94,7 @@ export default defineConfig({
   build: {
     external: ["@opencode-ai/sdk"],
     extensions: [
-      aptGet({ packages: ["git"] }),
+      aptGet({ packages: ["git", "curl", "ca-certificates"] }),
       packageManagerBinaries(),
       opencodeBinary(),
       ghCliBinary(),
