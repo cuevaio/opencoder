@@ -1,8 +1,10 @@
 import { ChevronRight } from "lucide-react";
 import { useState } from "react";
 import type { ToolState } from "#/lib/display-items";
+import { parseTodoProgress } from "#/lib/todo-state.ts";
 import { getToolInfo } from "#/lib/tool-info";
 import { cn } from "#/lib/utils.ts";
+import { TodoList } from "./TodoList";
 
 interface ToolCallProps {
 	tool: ToolState;
@@ -29,7 +31,35 @@ function StatusIndicator({ status }: { status: ToolState["status"] }) {
 	);
 }
 
+function TodoWriteToolCall({ tool }: ToolCallProps) {
+	const progress = parseTodoProgress((tool.input?.todos as unknown[]) ?? []);
+
+	return (
+		<div className="rounded-xl border border-border/80 bg-surface-1 text-xs">
+			<div className="flex items-center gap-2 px-3 py-2.5">
+				<StatusIndicator status={tool.status} />
+				<span className="font-medium">Todos</span>
+				<span className="text-muted-foreground">
+					{progress.completed} of {progress.total} completed
+				</span>
+			</div>
+			{progress.total > 0 && (
+				<div className="border-t border-border/80 px-3 py-2.5">
+					<TodoList todos={progress.todos} compact />
+				</div>
+			)}
+		</div>
+	);
+}
+
 export function ToolCall({ tool }: ToolCallProps) {
+	if (tool.tool === "todowrite" && Array.isArray(tool.input?.todos)) {
+		return <TodoWriteToolCall tool={tool} />;
+	}
+	return <GenericToolCall tool={tool} />;
+}
+
+function GenericToolCall({ tool }: ToolCallProps) {
 	const [expanded, setExpanded] = useState(false);
 	const info = getToolInfo(tool.tool, tool.input);
 

@@ -17,10 +17,12 @@ import {
 	dbRowsToStreamEvents,
 	type SessionEventRow,
 } from "#/lib/session-converter";
+import { extractLatestTodoProgress } from "#/lib/todo-state.ts";
 import { useChatLayoutContext } from "#/routes/_authed/chat.tsx";
 import { Button } from "../ui/button.tsx";
 import { ChatFooter } from "./ChatFooter";
 import { ChatMobileMenu } from "./ChatMobileMenu";
+import { SessionTodoDock } from "./SessionTodoDock";
 import { SessionTurn } from "./SessionTurn";
 
 const CREATE_PR_PROMPT = "create pr";
@@ -162,6 +164,10 @@ export function ChatView({
 		[initialPrompt, displayItems, initialPromptImages],
 	);
 	const status = useMemo(() => computeStatus(displayItems), [displayItems]);
+	const todoProgress = useMemo(
+		() => extractLatestTodoProgress(displayItems),
+		[displayItems],
+	);
 	const hasFileChanges = useMemo(
 		() =>
 			streamEvents.some(
@@ -399,6 +405,15 @@ export function ChatView({
 				</div>
 				<div ref={bottomRef} />
 			</div>
+
+			{/* Todo progress dock */}
+			{todoProgress && todoProgress.total > 0 && isWorking && (
+				<div className="border-t border-border/80 bg-background px-[var(--page-gutter)] py-2">
+					<div className="chat-container">
+						<SessionTodoDock progress={todoProgress} />
+					</div>
+				</div>
+			)}
 
 			{/* Footer */}
 			<div className="border-t border-border/80 bg-background px-[var(--page-gutter)] py-2 pb-safe">

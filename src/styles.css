@@ -234,6 +234,15 @@ pre,
   font-size: var(--font-size-display);
 }
 
+/* ── Todo pulse animation ── */
+@keyframes todo-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.todo-pulse {
+  animation: todo-pulse 1.5s ease-in-out infinite;
+}
+
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   *,
