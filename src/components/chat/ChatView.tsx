@@ -123,6 +123,27 @@ export function ChatView({
 		[eventRows],
 	);
 
+	// ─── Live token/cost totals from stream events ──────────
+	const liveUsage = useMemo(() => {
+		let tokens = 0;
+		let cost = 0;
+		for (const evt of streamEvents) {
+			if (evt.type === "message-update" && evt.message.role === "assistant") {
+				const msg = evt.message;
+				if (msg.tokens) {
+					tokens +=
+						(msg.tokens.input ?? 0) +
+						(msg.tokens.output ?? 0) +
+						(msg.tokens.reasoning ?? 0);
+				}
+				if (msg.cost != null) {
+					cost += Math.round(msg.cost * 1_000_000);
+				}
+			}
+		}
+		return { tokens: tokens || null, cost: cost || null };
+	}, [streamEvents]);
+
 	// ─── Display pipeline ────────────────────────────────────
 	const initialPrompt = (effectiveSessionRow?.initial_prompt as string) ?? "";
 	const rootSessionId =
@@ -331,11 +352,12 @@ export function ChatView({
 			[],
 		);
 	};
-	const totalTokens = effectiveSessionRow.total_tokens as
-		| number
-		| null
-		| undefined;
-	const totalCost = effectiveSessionRow.total_cost as number | null | undefined;
+	const totalTokens =
+		liveUsage.tokens ??
+		(effectiveSessionRow.total_tokens as number | null | undefined);
+	const totalCost =
+		liveUsage.cost ??
+		(effectiveSessionRow.total_cost as number | null | undefined);
 	const compactTokenCount =
 		totalTokens != null
 			? new Intl.NumberFormat("en-US", {
