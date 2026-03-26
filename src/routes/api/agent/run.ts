@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { tasks } from "@trigger.dev/sdk/v3";
 import { eq } from "drizzle-orm";
 import { db } from "#/db/index.ts";
-import { agentSessions as sessions } from "#/db/schema.ts";
+import { sessionEvents, agentSessions as sessions } from "#/db/schema.ts";
 import {
 	isAllowedModel,
 	normalizeModelId,
@@ -175,23 +175,38 @@ export const Route = createFileRoute("/api/agent/run")({
 						? repoMatch[1].replace(/\.git$/, "")
 						: repoUrl;
 
-					// Create the DB row first with a placeholder triggerRunId
+					// Create the DB row and user-message event atomically.
+					// The user-message is written here (not in the Trigger task) so that
+					// the message bubble appears in the UI immediately via Electric sync,
+					// instead of waiting for repo clone + agent startup.
 					const [dbRow] = await withTransientDbRetry(() => {
-						return db
-							.insert(sessions)
-							.values({
+						return db.transaction(async (tx) => {
+							const [row] = await tx
+								.insert(sessions)
+								.values({
+									userId,
+									repoUrl,
+									repoFullName,
+									triggerRunId: "pending",
+									title: prompt.slice(0, 100),
+									initialPrompt: prompt,
+									mode: mode || "build",
+									selectedModel: model,
+									selectedVariant: variant,
+									status: "running",
+									eventSeq: 1,
+								})
+								.returning({ id: sessions.id });
+							await tx.insert(sessionEvents).values({
+								sessionId: row.id,
 								userId,
-								repoUrl,
-								repoFullName,
-								triggerRunId: "pending",
-								title: prompt.slice(0, 100),
-								initialPrompt: prompt,
-								mode: mode || "build",
-								selectedModel: model,
-								selectedVariant: variant,
-								status: "running",
-							})
-							.returning({ id: sessions.id });
+								seq: 1,
+								eventType: "user-message",
+								userMessageText: prompt,
+								userMessageImages: imageUrls.length > 0 ? imageUrls : null,
+							});
+							return [row];
+						});
 					});
 
 					dbSessionId = dbRow.id;

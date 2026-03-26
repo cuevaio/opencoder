@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { tasks } from "@trigger.dev/sdk/v3";
 import { and, eq } from "drizzle-orm";
 import { db } from "#/db/index.ts";
-import { agentSessions as sessions } from "#/db/schema.ts";
+import { sessionEvents, agentSessions as sessions } from "#/db/schema.ts";
 import {
 	isAllowedModel,
 	normalizeModelId,
@@ -141,21 +141,35 @@ export const Route = createFileRoute("/api/agent/continue")({
 				}
 
 				try {
-					// Set status to "running" BEFORE triggering the task to avoid the
-					// race where the task starts inserting events while the client still
-					// sees "idle" (which causes a visible flash in the UI).
-					await db
-						.update(sessions)
-						.set({
-							status: "running",
-							lastPrompt: prompt,
-							mode: mode || (session.mode as "plan" | "build") || "build",
-							selectedModel: model,
-							selectedVariant: variant,
-						})
-						.where(
-							and(eq(sessions.id, sessionId), eq(sessions.userId, userId)),
-						);
+					// Write the user-message event and update session status atomically.
+					// The user-message is written here (not in the Trigger task) so that
+					// the message bubble appears in the UI immediately via Electric sync,
+					// instead of waiting for repo clone + agent startup.
+					const nextSeq = (session.eventSeq ?? 0) + 1;
+
+					await db.transaction(async (tx) => {
+						await tx.insert(sessionEvents).values({
+							sessionId,
+							userId,
+							seq: nextSeq,
+							eventType: "user-message",
+							userMessageText: prompt,
+							userMessageImages: imageUrls.length > 0 ? imageUrls : null,
+						});
+						await tx
+							.update(sessions)
+							.set({
+								status: "running",
+								lastPrompt: prompt,
+								eventSeq: nextSeq,
+								mode: mode || (session.mode as "plan" | "build") || "build",
+								selectedModel: model,
+								selectedVariant: variant,
+							})
+							.where(
+								and(eq(sessions.id, sessionId), eq(sessions.userId, userId)),
+							);
+					});
 
 					// Trigger the task with the existing session's dbSessionId
 					const handle = await tasks.trigger<typeof runSession>("run-session", {
@@ -184,14 +198,28 @@ export const Route = createFileRoute("/api/agent/continue")({
 
 					return Response.json({ sessionId });
 				} catch (error: unknown) {
-					// Revert status if the trigger failed after we set "running"
+					// Revert status and eventSeq, remove orphaned user-message event
 					try {
-						await db
-							.update(sessions)
-							.set({ status: session.status })
-							.where(
-								and(eq(sessions.id, sessionId), eq(sessions.userId, userId)),
-							);
+						await db.transaction(async (tx) => {
+							await tx
+								.update(sessions)
+								.set({
+									status: session.status,
+									eventSeq: session.eventSeq ?? 0,
+								})
+								.where(
+									and(eq(sessions.id, sessionId), eq(sessions.userId, userId)),
+								);
+							const nextSeq = (session.eventSeq ?? 0) + 1;
+							await tx
+								.delete(sessionEvents)
+								.where(
+									and(
+										eq(sessionEvents.sessionId, sessionId),
+										eq(sessionEvents.seq, nextSeq),
+									),
+								);
+						});
 					} catch {
 						// Best-effort revert
 					}
