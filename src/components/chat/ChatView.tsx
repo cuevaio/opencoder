@@ -267,6 +267,12 @@ export function ChatView({
 	// ─── Callbacks ────────────────────────────────────────────
 	const handleAnswer = useCallback(
 		async (tokenId: string, answers: string[][]) => {
+			// Optimistically switch to build mode before the fetch so there is no
+			// race condition with Electric SQL delivering events and remounting
+			// ChatFooter before the HTTP response arrives.
+			if (effectiveSessionRow?.mode === "plan") {
+				setModeOverride("build");
+			}
 			const response = await fetch("/api/agent/answer", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
@@ -274,10 +280,6 @@ export function ChatView({
 			});
 			if (response.ok) {
 				completedTokens.add(tokenId);
-				// After accepting a plan, switch UI to build mode for the next message
-				if (effectiveSessionRow?.mode === "plan") {
-					setModeOverride("build");
-				}
 			}
 		},
 		[completedTokens, effectiveSessionRow],
