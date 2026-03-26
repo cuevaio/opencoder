@@ -124,6 +124,10 @@ export function ChatFooter({
 		}
 	}, [defaultVariant]);
 
+	useEffect(() => {
+		setMode(defaultMode);
+	}, [defaultMode]);
+
 	// Notify parent whenever settings change so it can persist them
 	// biome-ignore lint/correctness/useExhaustiveDependencies: onSettingsChange is intentionally excluded to avoid infinite loops when parent re-renders
 	useEffect(() => {
