@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { buildDisplayItems, buildToolMap } from "#/lib/display-items";
+import {
+	buildDisplayItems,
+	buildToolMap,
+	hasRoundCompleteInCurrentTurn,
+} from "#/lib/display-items";
 import type { StreamEvent } from "#/lib/session-types";
 
 describe("buildDisplayItems", () => {
@@ -199,5 +203,60 @@ describe("buildDisplayItems", () => {
 
 		const toolMap = buildToolMap(events, "root-s1");
 		expect(toolMap.get("task-call-1")?.childReasoning).toBe("child thinks");
+	});
+});
+
+describe("hasRoundCompleteInCurrentTurn", () => {
+	it("returns true when current turn has round-complete", () => {
+		const events: StreamEvent[] = [
+			{ type: "user-message", text: "please update" },
+			{
+				type: "part-update",
+				messageId: "m1",
+				part: {
+					id: "p1",
+					sessionID: "s1",
+					messageID: "m1",
+					type: "text",
+					text: "done",
+				},
+			},
+			{ type: "round-complete" },
+		];
+
+		expect(hasRoundCompleteInCurrentTurn(events)).toBe(true);
+	});
+
+	it("returns false when only an older turn has round-complete", () => {
+		const events: StreamEvent[] = [
+			{ type: "user-message", text: "first" },
+			{ type: "round-complete" },
+			{ type: "user-message", text: "second" },
+			{
+				type: "part-update",
+				messageId: "m2",
+				part: {
+					id: "p2",
+					sessionID: "s1",
+					messageID: "m2",
+					type: "text",
+					text: "working",
+				},
+			},
+		];
+
+		expect(hasRoundCompleteInCurrentTurn(events)).toBe(false);
+	});
+
+	it("returns false when current turn is still running", () => {
+		const events: StreamEvent[] = [
+			{ type: "user-message", text: "please continue" },
+			{
+				type: "status",
+				status: "Running commands...",
+			},
+		];
+
+		expect(hasRoundCompleteInCurrentTurn(events)).toBe(false);
 	});
 });

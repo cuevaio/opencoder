@@ -396,6 +396,27 @@ export function findPendingQuestion(
 	return null;
 }
 
+/**
+ * Returns true when the latest turn (events since the most recent user-message)
+ * has reached round completion.
+ */
+export function hasRoundCompleteInCurrentTurn(events: StreamEvent[]): boolean {
+	for (let i = events.length - 1; i >= 0; i--) {
+		const event = events[i];
+		if (!event) continue;
+
+		if (event.type === "round-complete") {
+			return true;
+		}
+
+		if (event.type === "user-message") {
+			return false;
+		}
+	}
+
+	return false;
+}
+
 // ─── Internal helpers ────────────────────────────────────
 
 function partToToolState(part: Part & { type: "tool" }): ToolState {
