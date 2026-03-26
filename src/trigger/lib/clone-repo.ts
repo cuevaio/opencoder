@@ -1,5 +1,5 @@
 import { execSync } from "node:child_process";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -53,14 +53,19 @@ export function cloneRepo(
 		stdio: "pipe",
 	});
 
-	// Write a commit message template that appends the co-author trailer to
-	// every commit made by the agent in this clone.
-	const templatePath = path.join(tmpDir, ".gitmessage");
-	writeFileSync(templatePath, `\n\n${COAUTHOR_TRAILER}\n`);
-	execSync(`git config commit.template "${templatePath}"`, {
-		cwd: cloneDir,
-		stdio: "pipe",
-	});
+	// Install a prepare-commit-msg hook that appends the co-author trailer to
+	// every commit message, regardless of how the commit is made. Using a hook
+	// instead of commit.template because `git commit -m "..."` bypasses
+	// commit.template entirely, but hooks always run.
+	const hookPath = path.join(cloneDir, ".git", "hooks", "prepare-commit-msg");
+	const hookScript = [
+		"#!/bin/sh",
+		`TRAILER="${COAUTHOR_TRAILER}"`,
+		// Only append if the trailer isn't already present (idempotent).
+		`grep -qF "$TRAILER" "$1" || printf '\\n\\n%s\\n' "$TRAILER" >> "$1"`,
+	].join("\n");
+	writeFileSync(hookPath, hookScript);
+	chmodSync(hookPath, 0o755);
 
 	return { cloneDir, tmpDir, repoName, owner };
 }
