@@ -29,6 +29,12 @@ interface ChatFooterProps {
 	) => void;
 	onCancel?: () => void;
 	onEndSession?: () => void;
+	/** Called whenever model, variant, or mode changes so the parent can persist it. */
+	onSettingsChange?: (settings: {
+		model: string;
+		variant: string;
+		mode: "plan" | "build";
+	}) => void;
 	isWorking?: boolean;
 	isSubmitting?: boolean;
 	disabled?: boolean;
@@ -56,6 +62,7 @@ export function ChatFooter({
 	onSubmit,
 	onCancel,
 	onEndSession,
+	onSettingsChange,
 	isWorking = false,
 	isSubmitting = false,
 	disabled = false,
@@ -89,6 +96,12 @@ export function ChatFooter({
 			setVariant(defaultVariant);
 		}
 	}, [defaultVariant]);
+
+	// Notify parent whenever settings change so it can persist them
+	// biome-ignore lint/correctness/useExhaustiveDependencies: onSettingsChange is intentionally excluded to avoid infinite loops when parent re-renders
+	useEffect(() => {
+		onSettingsChange?.({ model, variant, mode });
+	}, [model, variant, mode]);
 
 	// When model changes, reset variant to the new model's default
 	// (unless the current variant is still valid for the new model)

@@ -4,8 +4,8 @@ import { useCallback, useState } from "react";
 import { ChatFooter } from "#/components/chat/ChatFooter.tsx";
 import { ChatMobileMenu } from "#/components/chat/ChatMobileMenu.tsx";
 import { RepoSelector } from "#/components/chat/RepoSelector.tsx";
+import { useLastSessionSettings } from "#/hooks/use-last-session-settings.ts";
 import { useProviderKeyStatus } from "#/hooks/use-provider-keys.ts";
-import { defaultModel } from "#/lib/ai/model-registry.ts";
 import { useChatLayoutContext } from "#/routes/_authed/chat.tsx";
 
 export const Route = createFileRoute("/_authed/chat/")({
@@ -16,7 +16,7 @@ export const Route = createFileRoute("/_authed/chat/")({
 
 function NewSessionPage() {
 	const navigate = useNavigate();
-	const [repoUrl, setRepoUrl] = useState("");
+	const [lastSettings, updateLastSettings] = useLastSessionSettings();
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const { setSidebarOpen } = useChatLayoutContext();
@@ -29,6 +29,7 @@ function NewSessionPage() {
 			model: string,
 			variant: string,
 		) => {
+			const repoUrl = lastSettings.repoUrl;
 			if (!repoUrl.trim() || !prompt.trim()) return;
 
 			setIsSubmitting(true);
@@ -68,7 +69,7 @@ function NewSessionPage() {
 				setIsSubmitting(false);
 			}
 		},
-		[repoUrl, navigate],
+		[lastSettings.repoUrl, navigate],
 	);
 
 	return (
@@ -103,8 +104,8 @@ function NewSessionPage() {
 
 					<div className="mb-6">
 						<RepoSelector
-							value={repoUrl}
-							onChange={setRepoUrl}
+							value={lastSettings.repoUrl}
+							onChange={(url) => updateLastSettings({ repoUrl: url })}
 							disabled={isSubmitting}
 						/>
 					</div>
@@ -118,8 +119,11 @@ function NewSessionPage() {
 					<ChatFooter
 						onSubmit={handleSubmit}
 						isSubmitting={isSubmitting}
-						disabled={!repoUrl.trim()}
-						defaultModel={defaultModel}
+						disabled={!lastSettings.repoUrl.trim()}
+						defaultModel={lastSettings.model}
+						defaultVariant={lastSettings.variant}
+						defaultMode={lastSettings.mode}
+						onSettingsChange={updateLastSettings}
 						configuredKeys={configuredKeys}
 					/>
 				</div>
