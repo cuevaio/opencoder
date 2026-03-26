@@ -51,6 +51,20 @@ export const modelOptions: ModelOption[] = [
 
 export const defaultModel = "gpt-5.3-codex";
 
+export const familyLabels: Record<string, string> = {
+	openai: "OpenAI",
+	anthropic: "Anthropic",
+};
+
+export function getModelsByFamily(): Record<string, ModelOption[]> {
+	const groups: Record<string, ModelOption[]> = {};
+	for (const option of modelOptions) {
+		if (!groups[option.family]) groups[option.family] = [];
+		groups[option.family].push(option);
+	}
+	return groups;
+}
+
 const modelIds = modelOptions.map((model) => model.id);
 export const allowedModelIds = modelIds;
 

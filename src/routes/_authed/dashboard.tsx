@@ -56,6 +56,9 @@ function DashboardPage() {
 	const [savingProvider, setSavingProvider] = useState<KeyProviderId | null>(
 		null,
 	);
+	const [editingProvider, setEditingProvider] = useState<KeyProviderId | null>(
+		null,
+	);
 
 	const loadKeys = useCallback(async () => {
 		setLoadingKeys(true);
@@ -105,6 +108,7 @@ function DashboardPage() {
 				}
 				setKeys(payload.keys ?? []);
 				setDrafts((current) => ({ ...current, [provider]: "" }));
+				setEditingProvider(null);
 			} catch (error) {
 				setKeyError(
 					error instanceof Error
@@ -135,6 +139,7 @@ function DashboardPage() {
 				throw new Error(payload.error || "Failed to remove provider key");
 			}
 			setKeys(payload.keys ?? []);
+			setEditingProvider((current) => (current === provider ? null : current));
 		} catch (error) {
 			setKeyError(
 				error instanceof Error
@@ -265,61 +270,103 @@ function DashboardPage() {
 							Loading keys...
 						</p>
 					) : (
-						<div className="mt-4 space-y-4">
+						<div className="mt-4 space-y-3">
 							{(["openai", "anthropic", "vercel"] as KeyProviderId[]).map(
 								(provider) => {
 									const status = keyByProvider.get(provider);
 									const isSaving = savingProvider === provider;
+									const isConfigured = !!status?.configured;
+									const isEditing = editingProvider === provider;
+									const showInput = !isConfigured || isEditing;
 
 									return (
 										<div
 											key={provider}
 											className="rounded-lg border border-border/70 bg-background/50 p-4"
 										>
+											{/* Header row — always visible */}
 											<div className="flex flex-wrap items-center justify-between gap-2">
-												<span className="text-sm font-medium">
-													{providerLabels[provider]}
-												</span>
-												<span className="text-xs text-muted-foreground">
-													{status?.configured
-														? `Configured (••••${status.last4 ?? ""})`
-														: "Not configured"}
-												</span>
-											</div>
-
-											<div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-stretch">
-												<input
-													type="password"
-													placeholder={`Enter ${providerLabels[provider]} API key`}
-													value={drafts[provider]}
-													onChange={(event) =>
-														setDrafts((current) => ({
-															...current,
-															[provider]: event.target.value,
-														}))
-													}
-													className="h-11 flex-1 rounded-md border border-border bg-background/70 px-3 text-sm outline-none focus:border-ring"
-													disabled={isSaving}
-												/>
-												<div className="flex flex-wrap gap-2 sm:flex-nowrap">
-													<button
-														type="button"
-														onClick={() => handleSaveKey(provider)}
-														disabled={!drafts[provider].trim() || isSaving}
-														className="min-h-[44px] rounded-md bg-foreground px-3 py-2.5 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50"
-													>
-														{isSaving ? "Saving..." : "Save"}
-													</button>
-													<button
-														type="button"
-														onClick={() => handleDeleteKey(provider)}
-														disabled={!status?.configured || isSaving}
-														className="min-h-[44px] rounded-md border border-border bg-background/70 px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted disabled:opacity-50"
-													>
-														Remove
-													</button>
+												<div className="flex items-center gap-2">
+													<span
+														className={`inline-block h-2 w-2 shrink-0 rounded-full ${isConfigured ? "bg-green-500" : "bg-muted-foreground/40"}`}
+													/>
+													<span className="text-sm font-medium">
+														{providerLabels[provider]}
+													</span>
+												</div>
+												<div className="flex items-center gap-2">
+													<span className="text-xs text-muted-foreground">
+														{isConfigured
+															? `Configured (••••${status?.last4 ?? ""})`
+															: "Not configured"}
+													</span>
+													{isConfigured && !isEditing && (
+														<>
+															<button
+																type="button"
+																onClick={() => setEditingProvider(provider)}
+																disabled={isSaving}
+																className="rounded border border-border bg-background/70 px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted disabled:opacity-50"
+															>
+																Update
+															</button>
+															<button
+																type="button"
+																onClick={() => handleDeleteKey(provider)}
+																disabled={isSaving}
+																className="rounded border border-border bg-background/70 px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted disabled:opacity-50"
+															>
+																{isSaving ? "Removing…" : "Remove"}
+															</button>
+														</>
+													)}
 												</div>
 											</div>
+
+											{/* Input row — only when unconfigured or editing */}
+											{showInput && (
+												<div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-stretch">
+													<input
+														type="password"
+														placeholder={`Enter ${providerLabels[provider]} API key`}
+														value={drafts[provider]}
+														onChange={(event) =>
+															setDrafts((current) => ({
+																...current,
+																[provider]: event.target.value,
+															}))
+														}
+														className="h-11 flex-1 rounded-md border border-border bg-background/70 px-3 text-sm outline-none focus:border-ring"
+														disabled={isSaving}
+													/>
+													<div className="flex flex-wrap gap-2 sm:flex-nowrap">
+														<button
+															type="button"
+															onClick={() => handleSaveKey(provider)}
+															disabled={!drafts[provider].trim() || isSaving}
+															className="min-h-[44px] rounded-md bg-foreground px-3 py-2.5 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50"
+														>
+															{isSaving ? "Saving…" : "Save"}
+														</button>
+														{isEditing && (
+															<button
+																type="button"
+																onClick={() => {
+																	setEditingProvider(null);
+																	setDrafts((current) => ({
+																		...current,
+																		[provider]: "",
+																	}));
+																}}
+																disabled={isSaving}
+																className="min-h-[44px] rounded-md border border-border bg-background/70 px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted disabled:opacity-50"
+															>
+																Cancel
+															</button>
+														)}
+													</div>
+												</div>
+											)}
 										</div>
 									);
 								},

@@ -3,6 +3,7 @@ import { eq, useLiveQuery } from "@tanstack/react-db";
 import { PanelLeftOpen } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAutoScroll } from "#/hooks/use-auto-scroll";
+import { useProviderKeyStatus } from "#/hooks/use-provider-keys.ts";
 import { computeStatus } from "#/lib/agent-status";
 import { defaultModel as defaultModelId } from "#/lib/ai/model-registry.ts";
 import { createSessionEventsCollection } from "#/lib/collections";
@@ -58,6 +59,7 @@ export function ChatView({
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const bottomRef = useRef<HTMLDivElement>(null);
 	const { setSidebarOpen, sessionsSyncError } = useChatLayoutContext();
+	const { configuredKeys } = useProviderKeyStatus();
 	const [showSlowLoadFallback, setShowSlowLoadFallback] = useState(false);
 	const [hasHydratedSession, setHasHydratedSession] = useState(false);
 
@@ -403,6 +405,7 @@ export function ChatView({
 								defaultModel={defaultModel}
 								defaultVariant={defaultVariant}
 								placeholder="Send a follow-up message..."
+								configuredKeys={configuredKeys}
 							/>
 						</div>
 					)}

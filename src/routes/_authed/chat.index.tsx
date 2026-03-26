@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { ChatFooter } from "#/components/chat/ChatFooter.tsx";
 import { ChatMobileMenu } from "#/components/chat/ChatMobileMenu.tsx";
 import { RepoSelector } from "#/components/chat/RepoSelector.tsx";
+import { useProviderKeyStatus } from "#/hooks/use-provider-keys.ts";
 import { defaultModel } from "#/lib/ai/model-registry.ts";
 import { useChatLayoutContext } from "#/routes/_authed/chat.tsx";
 
@@ -19,6 +20,7 @@ function NewSessionPage() {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const { setSidebarOpen } = useChatLayoutContext();
+	const { configuredKeys } = useProviderKeyStatus();
 
 	const handleSubmit = useCallback(
 		async (
@@ -118,6 +120,7 @@ function NewSessionPage() {
 						isSubmitting={isSubmitting}
 						disabled={!repoUrl.trim()}
 						defaultModel={defaultModel}
+						configuredKeys={configuredKeys}
 					/>
 				</div>
 			</main>
