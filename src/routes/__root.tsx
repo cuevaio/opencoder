@@ -6,6 +6,7 @@ import {
 	Outlet,
 	Scripts,
 } from "@tanstack/react-router";
+import { Analytics } from "@vercel/analytics/react";
 import { ThemeProvider } from "#/components/theme-provider.tsx";
 import { THEME_INIT_SCRIPT } from "#/lib/theme.ts";
 import TanStackQueryProvider from "../integrations/tanstack-query/root-provider";
@@ -76,6 +77,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			</head>
 			<body className="font-sans antialiased">
 				{children}
+				<Analytics />
 				<Scripts />
 			</body>
 		</html>
