@@ -1,41 +1,35 @@
-import type { Collection } from "@tanstack/react-db";
-import { useLiveQuery } from "@tanstack/react-db";
+import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { LayoutDashboard, Plus } from "lucide-react";
 import { Wordmark } from "#/components/logo.tsx";
+import { sessionsQueryOptions } from "#/lib/queries.ts";
 
 interface SessionSidebarProps {
-	// Collection passed from the parent layout so it's shared and not re-created
-	sessionsCollection: Collection<
-		Record<string, unknown>,
-		string | number,
-		// biome-ignore lint/suspicious/noExplicitAny: Electric collection utils type is opaque
-		any
-	>;
 	onSelectSession: (id: number) => void;
 	onNewSession: () => void;
-	onPrefetchSessionEvents?: (id: number) => void;
 }
 
 export function SessionSidebar({
-	sessionsCollection,
 	onSelectSession,
 	onNewSession,
-	onPrefetchSessionEvents,
 }: SessionSidebarProps) {
 	// Derive active session from URL params
-	// biome-ignore lint/suspicious/noExplicitAny: params type resolves after routeTree regen
 	const navigate = useNavigate();
-	const params = useParams({ strict: false }) as any;
+	const params = useParams({ strict: false }) as { sessionId?: string };
 	const activeSessionId = params?.sessionId ? Number(params.sessionId) : null;
-	const { data: sessions, isLoading } = useLiveQuery(
-		(q) =>
-			q
-				.from({ s: sessionsCollection })
-				.orderBy(({ s }) => s.created_at as string, "desc")
-				.limit(50),
-		[sessionsCollection],
-	);
+	const { data: sessions, isLoading } = useQuery({
+		...sessionsQueryOptions(),
+		refetchInterval: (query) => {
+			const rows = query.state.data;
+			if (!rows || rows.length === 0) {
+				return 60_000;
+			}
+
+			const hasRunning = rows.some((session) => session.status === "running");
+			return hasRunning ? 3_000 : 60_000;
+		},
+		refetchOnWindowFocus: true,
+	});
 
 	return (
 		<div className="flex h-full min-h-0 flex-col border-r border-border/70 bg-surface-1">
@@ -81,27 +75,15 @@ export function SessionSidebar({
 				)}
 
 				{sessions?.map((session, i) => {
-					const id = session.id as number;
-					const status = session.status as string;
-					const title = (session.title as string) || "Untitled";
-					const repoFullName = session.repo_full_name as string;
-					const createdAt = session.created_at as string;
-					const toolCallCount = session.tool_call_count as number | null;
+					const { id, status, createdAt, toolCallCount } = session;
+					const title = session.title || "Untitled";
+					const repoFullName = session.repoFullName;
 
 					return (
 						<button
 							type="button"
 							key={id}
 							onClick={() => onSelectSession(id)}
-							onPointerEnter={(event) => {
-								if (event.pointerType !== "mouse") return;
-								if (activeSessionId === id) return;
-								onPrefetchSessionEvents?.(id);
-							}}
-							onFocus={() => {
-								if (activeSessionId === id) return;
-								onPrefetchSessionEvents?.(id);
-							}}
 							className={`w-full border-b border-border/50 px-4 py-3.5 text-left transition-colors hover:bg-surface-2 press-scale animate-in fade-in-0 duration-200 ${
 								activeSessionId === id ? "bg-surface-2" : ""
 							}`}

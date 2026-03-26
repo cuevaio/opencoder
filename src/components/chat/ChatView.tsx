@@ -1,12 +1,12 @@
-import type { Collection } from "@tanstack/react-db";
-import { eq, useLiveQuery } from "@tanstack/react-db";
+import { useLiveQuery } from "@tanstack/react-db";
+import { useQuery } from "@tanstack/react-query";
 import { PanelLeftOpen } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAutoScroll } from "#/hooks/use-auto-scroll";
 import { useProviderKeyStatus } from "#/hooks/use-provider-keys.ts";
 import { computeStatus } from "#/lib/agent-status";
 import { defaultModel as defaultModelId } from "#/lib/ai/model-registry.ts";
-import { createSessionEventsCollection } from "#/lib/collections";
+import { createSessionEventsCollection } from "#/lib/collections.ts";
 import {
 	buildDisplayItems,
 	buildToolMap,
@@ -14,6 +14,10 @@ import {
 	hasRoundCompleteInCurrentTurn,
 	splitIntoTurns,
 } from "#/lib/display-items";
+import {
+	sessionEventsQueryOptions,
+	sessionQueryOptions,
+} from "#/lib/queries.ts";
 import {
 	dbRowsToStreamEvents,
 	type SessionEventRow,
@@ -31,13 +35,6 @@ const UPDATE_PR_PROMPT = "update pr";
 
 interface ChatViewProps {
 	sessionId: number;
-	// Shared collection from the chat layout — avoids duplicate Electric subscriptions
-	sessionsCollection: Collection<
-		Record<string, unknown>,
-		string | number,
-		// biome-ignore lint/suspicious/noExplicitAny: Electric collection utils type is opaque
-		any
-	>;
 	onNewSession: () => void;
 	onFollowup: (
 		prompt: string,
@@ -53,7 +50,6 @@ interface ChatViewProps {
 
 export function ChatView({
 	sessionId,
-	sessionsCollection,
 	onNewSession,
 	onFollowup,
 	onRetrySync,
@@ -62,58 +58,62 @@ export function ChatView({
 }: ChatViewProps) {
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const bottomRef = useRef<HTMLDivElement>(null);
-	const { setSidebarOpen, sessionsSyncError } = useChatLayoutContext();
+	const { setSidebarOpen } = useChatLayoutContext();
 	const { configuredKeys } = useProviderKeyStatus();
 	const [showSlowLoadFallback, setShowSlowLoadFallback] = useState(false);
-	const [hasHydratedSession, setHasHydratedSession] = useState(false);
+	const [electricSyncError, setElectricSyncError] = useState<string | null>(
+		null,
+	);
+	const [electricEventRows, setElectricEventRows] = useState<SessionEventRow[]>(
+		[],
+	);
 	const [modeOverride, setModeOverride] = useState<"plan" | "build" | null>(
 		null,
 	);
 
-	// Events collection is scoped to this session.
-	const eventsCollection = useMemo(
-		() => createSessionEventsCollection(sessionId),
-		[sessionId],
+	const {
+		data: sessionDetail,
+		isLoading: isSessionLoading,
+		isFetched: hasSessionFetched,
+	} = useQuery({
+		...sessionQueryOptions(sessionId),
+		refetchInterval: (query) =>
+			query.state.data?.status === "running" ? 3_000 : 30_000,
+		refetchOnWindowFocus: true,
+	});
+
+	const effectiveSessionRow = sessionDetail ?? null;
+	const sessionStatus = sessionDetail?.status ?? "running";
+	const useElectricEvents = sessionStatus === "running";
+	const useNeonEvents = !useElectricEvents || Boolean(electricSyncError);
+
+	const { data: neonEventRows = [] } = useQuery({
+		...sessionEventsQueryOptions(sessionId),
+		enabled: useNeonEvents,
+		refetchInterval: useElectricEvents ? 3_000 : false,
+		refetchOnWindowFocus: true,
+	});
+
+	const eventRows = useMemo(
+		() =>
+			(useElectricEvents && !electricSyncError
+				? electricEventRows
+				: neonEventRows) as SessionEventRow[],
+		[electricEventRows, electricSyncError, neonEventRows, useElectricEvents],
 	);
-
-	// Tear down the Electric shape subscription when the session changes or
-	// the component unmounts. React's cleanup closes over the previous
-	// eventsCollection value, so the old subscription is terminated while
-	// the new one (from useMemo) remains active.
-	useEffect(() => {
-		return () => {
-			void eventsCollection.cleanup();
-		};
-	}, [eventsCollection]);
-
-	// ─── Live queries ─────────────────────────────────────────
-	const { data: eventRows } = useLiveQuery(
-		(q) =>
-			q
-				.from({ evt: eventsCollection })
-				.orderBy(({ evt }) => evt.seq as number, "asc"),
-		[eventsCollection],
-	);
-
-	const { data: allSessions } = useLiveQuery(
-		(q) =>
-			q.from({ s: sessionsCollection }).where(({ s }) => eq(s.id, sessionId)),
-		[sessionsCollection, sessionId],
-	);
-
-	const sessionRow = allSessions?.[0] ?? null;
-	const sessionRowCacheRef = useRef(new Map<number, Record<string, unknown>>());
-	if (sessionRow) {
-		sessionRowCacheRef.current.set(sessionId, sessionRow);
-	}
-	const effectiveSessionRow =
-		sessionRow ?? sessionRowCacheRef.current.get(sessionId) ?? null;
 
 	useEffect(() => {
-		if (sessionRow) {
-			setHasHydratedSession(true);
+		if (!useElectricEvents) {
+			setElectricSyncError(null);
+			setElectricEventRows([]);
 		}
-	}, [sessionRow]);
+	}, [useElectricEvents]);
+
+	useEffect(() => {
+		if (useElectricEvents && electricEventRows.length > 0) {
+			setElectricSyncError(null);
+		}
+	}, [electricEventRows, useElectricEvents]);
 
 	useEffect(() => {
 		if (effectiveSessionRow) {
@@ -131,8 +131,7 @@ export function ChatView({
 
 	// ─── Build StreamEvent[] from DB rows ─────────────────────
 	const streamEvents = useMemo(
-		() =>
-			dbRowsToStreamEvents((eventRows ?? []) as unknown as SessionEventRow[]),
+		() => dbRowsToStreamEvents(eventRows),
 		[eventRows],
 	);
 
@@ -158,11 +157,11 @@ export function ChatView({
 	}, [streamEvents]);
 
 	// ─── Display pipeline ────────────────────────────────────
-	const initialPrompt = (effectiveSessionRow?.initial_prompt as string) ?? "";
+	const initialPrompt = (effectiveSessionRow?.initialPrompt as string) ?? "";
 	const rootSessionId =
-		typeof effectiveSessionRow?.opencode_session_id === "string" &&
-		effectiveSessionRow.opencode_session_id.length > 0
-			? effectiveSessionRow.opencode_session_id
+		typeof effectiveSessionRow?.opencodeSessionId === "string" &&
+		effectiveSessionRow.opencodeSessionId.length > 0
+			? effectiveSessionRow.opencodeSessionId
 			: undefined;
 
 	const toolMap = useMemo(
@@ -174,7 +173,7 @@ export function ChatView({
 		[streamEvents, toolMap, rootSessionId],
 	);
 	const initialPromptImages = useMemo(() => {
-		const firstUserMessage = (eventRows ?? []).find(
+		const firstUserMessage = eventRows.find(
 			(row) =>
 				(row as Record<string, unknown>).event_type === "user-message" &&
 				Array.isArray((row as Record<string, unknown>).user_message_images),
@@ -246,9 +245,11 @@ export function ChatView({
 	useAutoScroll(scrollRef, bottomRef, streamEvents);
 
 	// ─── Session status ───────────────────────────────────────
-	const sessionStatus = (effectiveSessionRow?.status as string) ?? "running";
 	const isWorking = sessionStatus === "running";
-	const isIdle = sessionStatus === "idle" || sessionStatus === "completed";
+	const isIdle =
+		sessionStatus === "idle" ||
+		sessionStatus === "completed" ||
+		sessionStatus === "failed";
 	const hasCompletedCurrentTurn = useMemo(
 		() => hasRoundCompleteInCurrentTurn(streamEvents),
 		[streamEvents],
@@ -286,7 +287,7 @@ export function ChatView({
 	);
 
 	const handleCancel = useCallback(async () => {
-		const triggerRunId = effectiveSessionRow?.trigger_run_id as
+		const triggerRunId = effectiveSessionRow?.triggerRunId as
 			| string
 			| undefined;
 		if (!triggerRunId) return;
@@ -297,15 +298,18 @@ export function ChatView({
 		});
 	}, [effectiveSessionRow]);
 
-	// ─── Loading state while Electric syncs ───────────────────
-	// When ChatView first mounts the Electric subscription hasn't delivered
-	// data yet. Show a lightweight skeleton instead of flashing empty content.
-	// (Placed after all hooks to satisfy React's rules of hooks.)
-	if (!effectiveSessionRow && !hasHydratedSession) {
-		const shouldShowError = showSlowLoadFallback || Boolean(sessionsSyncError);
-		const loadingMessage = sessionsSyncError
-			? `Session sync failed: ${sessionsSyncError}`
-			: "Session sync is taking longer than expected.";
+	const handleElectricError = useCallback((error: unknown) => {
+		setElectricSyncError(
+			error instanceof Error
+				? error.message
+				: "Failed to sync live session events",
+		);
+	}, []);
+
+	// ─── Loading state ────────────────────────────────────────
+	if (!effectiveSessionRow && !hasSessionFetched) {
+		const shouldShowError = showSlowLoadFallback;
+		const loadingMessage = "Session is taking longer than expected.";
 
 		return (
 			<div className="flex h-full min-h-0 flex-col">
@@ -354,15 +358,33 @@ export function ChatView({
 		);
 	}
 
+	if (!effectiveSessionRow && hasSessionFetched && !isSessionLoading) {
+		return (
+			<div className="flex h-full min-h-0 items-center justify-center px-4">
+				<div className="w-full max-w-sm space-y-3 rounded-xl border border-border/80 bg-surface-1 p-4 text-center">
+					<div className="text-sm font-medium text-foreground">
+						Session not found
+					</div>
+					<button
+						type="button"
+						onClick={onNewSession}
+						className="rounded border border-border px-2 py-1 text-xs font-medium text-foreground hover:bg-muted press-scale"
+					>
+						Start a new session
+					</button>
+				</div>
+			</div>
+		);
+	}
+
 	// ─── Render ───────────────────────────────────────────────
-	const repoDisplay = (effectiveSessionRow.repo_full_name as string) ?? "";
+	const repoDisplay = (effectiveSessionRow.repoFullName as string) ?? "";
 	const defaultMode =
 		modeOverride ?? ((effectiveSessionRow.mode as "plan" | "build") || "build");
 	const defaultModel =
-		(effectiveSessionRow.selected_model as string | undefined) ||
-		defaultModelId;
+		(effectiveSessionRow.selectedModel as string | undefined) || defaultModelId;
 	const defaultVariant =
-		(effectiveSessionRow.selected_variant as string | undefined) || undefined;
+		(effectiveSessionRow.selectedVariant as string | undefined) || undefined;
 	const handleCreateOrUpdatePr = () => {
 		onFollowup(
 			hasExistingPr ? UPDATE_PR_PROMPT : CREATE_PR_PROMPT,
@@ -374,10 +396,10 @@ export function ChatView({
 	};
 	const totalTokens =
 		liveUsage.tokens ??
-		(effectiveSessionRow.total_tokens as number | null | undefined);
+		(effectiveSessionRow.totalTokens as number | null | undefined);
 	const totalCost =
 		liveUsage.cost ??
-		(effectiveSessionRow.total_cost as number | null | undefined);
+		(effectiveSessionRow.totalCost as number | null | undefined);
 	const compactTokenCount =
 		totalTokens != null
 			? new Intl.NumberFormat("en-US", {
@@ -386,13 +408,20 @@ export function ChatView({
 				}).format(totalTokens)
 			: null;
 	const shouldShowReconnectNotice =
-		hasHydratedSession && !sessionRow && Boolean(effectiveSessionRow);
+		useElectricEvents && (Boolean(electricSyncError) || useNeonEvents);
 	const shouldShowInlineError =
-		shouldShowReconnectNotice &&
-		(showSlowLoadFallback || Boolean(sessionsSyncError));
+		shouldShowReconnectNotice && Boolean(electricSyncError);
 
 	return (
 		<div className="flex h-full min-h-0 flex-col bg-background">
+			{useElectricEvents && (
+				<RunningSessionEvents
+					sessionId={sessionId}
+					onRows={setElectricEventRows}
+					onError={handleElectricError}
+				/>
+			)}
+
 			{/* Header bar */}
 			<div className="flex min-h-12 items-center justify-between border-b border-border/80 bg-background px-[var(--page-gutter)] py-2 pt-safe">
 				<div className="flex min-w-0 items-center gap-2">
@@ -481,7 +510,7 @@ export function ChatView({
 					{shouldShowReconnectNotice && (
 						<div className="mb-2 rounded-lg border border-border bg-surface-2 px-3 py-2 text-xs text-muted-foreground">
 							{shouldShowInlineError
-								? `Session sync issue: ${sessionsSyncError ?? "temporary sync interruption"}`
+								? `Session sync issue: ${electricSyncError ?? "temporary sync interruption"}`
 								: "Reconnecting session updates..."}
 						</div>
 					)}
@@ -510,4 +539,44 @@ export function ChatView({
 			</div>
 		</div>
 	);
+}
+
+interface RunningSessionEventsProps {
+	sessionId: number;
+	onRows: (rows: SessionEventRow[]) => void;
+	onError: (error: unknown) => void;
+}
+
+function RunningSessionEvents({
+	sessionId,
+	onRows,
+	onError,
+}: RunningSessionEventsProps) {
+	const eventsCollection = useMemo(
+		() =>
+			createSessionEventsCollection(sessionId, {
+				onError,
+			}),
+		[onError, sessionId],
+	);
+
+	const { data: eventRows } = useLiveQuery(
+		(q) =>
+			q
+				.from({ evt: eventsCollection })
+				.orderBy(({ evt }) => evt.seq as number, "asc"),
+		[eventsCollection],
+	);
+
+	useEffect(() => {
+		onRows((eventRows ?? []) as unknown as SessionEventRow[]);
+	}, [eventRows, onRows]);
+
+	useEffect(() => {
+		return () => {
+			void eventsCollection.cleanup();
+		};
+	}, [eventsCollection]);
+
+	return null;
 }
