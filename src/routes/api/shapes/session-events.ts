@@ -80,7 +80,7 @@ export const Route = createFileRoute("/api/shapes/session-events")({
 				shapeUrl.searchParams.set("secret", electricSecret);
 				shapeUrl.searchParams.set("table", "session_events");
 				shapeUrl.searchParams.set("where", "session_id = $1");
-				shapeUrl.searchParams.set("params", JSON.stringify([session.id]));
+				shapeUrl.searchParams.set("params[1]", String(session.id));
 				// Keep payload light for live display.
 				// We include part_data as a fallback for reasoning reconstruction,
 				// while still excluding tool_input/tool_metadata.
