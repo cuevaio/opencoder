@@ -42,6 +42,8 @@ describe("startOpenCodeServer", () => {
 			process.cwd(),
 			new AbortController().signal,
 			"openai/gpt-5.3-codex",
+			"ghp_fake_token",
+			{ name: "Test User", email: "123+testuser@users.noreply.github.com" },
 		);
 
 		expect(createOpencodeMock).toHaveBeenCalledTimes(1);

@@ -1,6 +1,7 @@
 import path from "node:path";
 import { createOpencode } from "@opencode-ai/sdk/v2";
 import { logger } from "@trigger.dev/sdk/v3";
+import type { UserIdentity } from "./clone-repo.ts";
 
 type OpenCodeReturn = Awaited<ReturnType<typeof createOpencode>>;
 
@@ -14,6 +15,7 @@ export async function startOpenCodeServer(
 	signal: AbortSignal,
 	model: string,
 	githubToken: string,
+	gitUser: UserIdentity,
 ): Promise<OpenCodeInstance> {
 	const binDir = path.join(process.cwd(), "bin");
 	process.env.PATH = `/usr/local/bin:${binDir}:${process.env.PATH}`;
@@ -27,6 +29,14 @@ export async function startOpenCodeServer(
 	// Expose the user's GitHub token so the agent can use `gh` CLI commands
 	// (e.g. `gh pr create`) without needing a separate `gh auth login`.
 	process.env.GH_TOKEN = githubToken;
+
+	// Force the git commit author/committer to the authenticated user.
+	// Env vars override ALL other mechanisms (git config, --author flag,
+	// OpenCode's own defaults), ensuring commits are attributed to the user.
+	process.env.GIT_AUTHOR_NAME = gitUser.name;
+	process.env.GIT_AUTHOR_EMAIL = gitUser.email;
+	process.env.GIT_COMMITTER_NAME = gitUser.name;
+	process.env.GIT_COMMITTER_EMAIL = gitUser.email;
 
 	// Must chdir to clone dir so OpenCode operates on the repo
 	const originalCwd = process.cwd();

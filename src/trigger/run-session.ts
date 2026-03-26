@@ -9,6 +9,7 @@ import { modelIdSchema } from "#/lib/ai/model-types.ts";
 import { resolveModelExecution } from "#/lib/ai/provider-keys.ts";
 import type { SessionExportData } from "#/lib/session-types";
 import { resetCancelChecker } from "./lib/cancel-checker";
+import type { UserIdentity } from "./lib/clone-repo";
 import { cloneRepo } from "./lib/clone-repo";
 import { SessionDbWriter } from "./lib/db-writer";
 import {
@@ -23,6 +24,7 @@ import {
 	restoreGitState,
 	saveGitState,
 } from "./lib/git-state";
+import { fetchGitHubIdentity } from "./lib/github-identity";
 import {
 	authenticateOpenCode,
 	startOpenCodeServer,
@@ -116,13 +118,26 @@ export const runSession = schemaTask({
 			continueGitState = gitState;
 		}
 
+		// ── Resolve the user's GitHub identity ──
+		// Use the GitHub API to get the user's login and numeric ID so we can
+		// construct the noreply email that GitHub always recognises for commit
+		// attribution, regardless of email privacy settings.
+		const ghUser = await fetchGitHubIdentity(payload.githubToken);
+		const gitUser: UserIdentity = {
+			name: ghUser.name || ghUser.login,
+			email: `${ghUser.id}+${ghUser.login}@users.noreply.github.com`,
+		};
+		logger.info("Resolved GitHub identity for commits", {
+			login: ghUser.login,
+			id: ghUser.id,
+			authorName: gitUser.name,
+			authorEmail: gitUser.email,
+		});
+
 		let tmpDir: string | undefined;
 		try {
 			// ── Step 1: Clone repo ──
-			const clone = cloneRepo(payload.repoUrl, payload.githubToken, {
-				name: payload.userName,
-				email: payload.userEmail,
-			});
+			const clone = cloneRepo(payload.repoUrl, payload.githubToken, gitUser);
 			tmpDir = clone.tmpDir;
 			metadata.set("repository", `${clone.owner}/${clone.repoName}`);
 
@@ -168,6 +183,7 @@ export const runSession = schemaTask({
 				abortController.signal,
 				modelExecution.fullModel,
 				payload.githubToken,
+				gitUser,
 			);
 
 			try {
