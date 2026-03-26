@@ -336,6 +336,13 @@ export function ChatView({
 		| null
 		| undefined;
 	const totalCost = effectiveSessionRow.total_cost as number | null | undefined;
+	const compactTokenCount =
+		totalTokens != null
+			? new Intl.NumberFormat("en-US", {
+					notation: "compact",
+					maximumFractionDigits: 1,
+				}).format(totalTokens)
+			: null;
 	const shouldShowReconnectNotice =
 		hasHydratedSession && !sessionRow && Boolean(effectiveSessionRow);
 	const shouldShowInlineError =
@@ -366,12 +373,15 @@ export function ChatView({
 						</span>
 					)}
 					{totalTokens != null && (
-						<span className="hidden rounded-full bg-surface-2 px-2 py-1 text-[11px] text-muted-foreground sm:inline">
-							{totalTokens.toLocaleString()} tokens
+						<span className="rounded-full bg-surface-2 px-2 py-1 text-[11px] text-muted-foreground">
+							<span className="sm:hidden">{compactTokenCount} tok</span>
+							<span className="hidden sm:inline">
+								{totalTokens.toLocaleString()} tokens
+							</span>
 						</span>
 					)}
 					{totalCost != null && totalCost > 0 && (
-						<span className="hidden rounded-full bg-surface-2 px-2 py-1 text-[11px] text-muted-foreground sm:inline">
+						<span className="rounded-full bg-surface-2 px-2 py-1 text-[11px] text-muted-foreground">
 							${(totalCost / 1_000_000).toFixed(4)}
 						</span>
 					)}
