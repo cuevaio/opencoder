@@ -102,9 +102,6 @@ export function SessionSidebar({
 								{status === "running" && (
 									<span className="inline-block h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-blue-500" />
 								)}
-								{status === "idle" && (
-									<span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-green-500" />
-								)}
 								<span className="truncate text-xs font-semibold text-foreground">
 									{title}
 								</span>
@@ -114,19 +111,7 @@ export function SessionSidebar({
 							</div>
 							<div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground">
 								<span>{formatRelativeTime(createdAt)}</span>
-								{status === "running" ? (
-									<span className="text-blue-600 dark:text-blue-400">
-										Running
-									</span>
-								) : status === "idle" ? (
-									<span className="text-green-600 dark:text-green-400">
-										Idle
-									</span>
-								) : status === "failed" ? (
-									<span className="text-red-500">Failed</span>
-								) : (
-									toolCallCount != null && <span>{toolCallCount} tools</span>
-								)}
+								{toolCallCount != null && <span>{toolCallCount} tools</span>}
 							</div>
 						</button>
 					);
