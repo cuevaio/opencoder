@@ -38,9 +38,18 @@ export function sessionExportToStreamEvents(
 				continue;
 			}
 			const textParts = parts.filter((p) => p.type === "text");
+			const fileParts = parts.filter((p) => p.type === "file");
 			const text = textParts.map((p) => p.text).join("\n");
+			const images =
+				fileParts.length > 0
+					? fileParts.map((p) => ({
+							url: p.url,
+							mime: p.mime,
+							filename: p.filename,
+						}))
+					: undefined;
 			if (text) {
-				events.push({ type: "user-message", text });
+				events.push({ type: "user-message", text, images });
 			}
 			continue;
 		}
@@ -105,6 +114,11 @@ export interface SessionEventRow {
 	message_tokens_reasoning?: number | null;
 	message_cost?: number | null;
 	user_message_text?: string | null;
+	user_message_images?: Array<{
+		url: string;
+		mime: string;
+		filename?: string;
+	}> | null;
 	part_data?: unknown;
 }
 
@@ -197,7 +211,11 @@ export function dbRowsToStreamEvents(rows: SessionEventRow[]): StreamEvent[] {
 					// The first user-message is the initialPrompt, already passed to
 					// splitIntoTurns() separately — skip it to avoid duplication.
 					if (userMessageCount > 1) {
-						events.push({ type: "user-message", text: row.user_message_text });
+						events.push({
+							type: "user-message",
+							text: row.user_message_text,
+							images: row.user_message_images ?? undefined,
+						});
 					}
 				}
 				break;

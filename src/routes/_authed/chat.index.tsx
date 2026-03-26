@@ -28,6 +28,7 @@ function NewSessionPage() {
 			mode: "plan" | "build",
 			model: string,
 			variant: string,
+			imageUrls: Array<{ url: string; mime: string; filename?: string }>,
 		) => {
 			const repoUrl = lastSettings.repoUrl;
 			if (!repoUrl.trim() || !prompt.trim()) return;
@@ -45,6 +46,7 @@ function NewSessionPage() {
 						mode,
 						model,
 						variant,
+						imageUrls,
 					}),
 				});
 

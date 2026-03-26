@@ -113,6 +113,7 @@ export const Route = createFileRoute("/api/shapes/session-events")({
 						"message_tokens_reasoning",
 						"message_cost",
 						"user_message_text",
+						"user_message_images",
 						"part_data",
 						"created_at",
 						"updated_at",

@@ -1,6 +1,7 @@
 import type { FormEvent as ReactFormEvent, ReactNode } from "react";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import type { DisplayItem, Turn } from "#/lib/display-items";
+import { Dialog, DialogContent } from "../ui/dialog";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { QuestionForm } from "./QuestionForm";
 import { ToolCall } from "./ToolCall";
@@ -35,6 +36,16 @@ export function SessionTurn({
 			{/* User prompt */}
 			<div className="flex justify-end">
 				<div className="max-w-[95%] rounded-xl bg-foreground px-3.5 py-3 text-sm leading-relaxed text-background shadow-xs [overflow-wrap:anywhere] sm:max-w-[82%]">
+					{turn.images && turn.images.length > 0 ? (
+						<div className="mb-2 flex flex-wrap gap-2">
+							{turn.images.map((image, i) => (
+								<ImageThumbnail
+									key={`${image.url}-${i.toString()}`}
+									image={image}
+								/>
+							))}
+						</div>
+					) : null}
 					{turn.prompt}
 				</div>
 			</div>
@@ -130,4 +141,37 @@ function TurnItem({
 		default:
 			return null;
 	}
+}
+
+function ImageThumbnail({
+	image,
+}: {
+	image: { url: string; mime: string; filename?: string };
+}) {
+	const [open, setOpen] = useState(false);
+
+	return (
+		<>
+			<button
+				type="button"
+				onClick={() => setOpen(true)}
+				className="overflow-hidden rounded-md border border-background/30"
+			>
+				<img
+					src={image.url}
+					alt={image.filename ?? "Uploaded image"}
+					className="h-20 w-20 object-cover transition-opacity hover:opacity-85"
+				/>
+			</button>
+			<Dialog open={open} onOpenChange={setOpen}>
+				<DialogContent className="max-w-4xl border-0 bg-transparent p-0 shadow-none">
+					<img
+						src={image.url}
+						alt={image.filename ?? "Uploaded image"}
+						className="max-h-[80vh] w-full rounded-md object-contain"
+					/>
+				</DialogContent>
+			</Dialog>
+		</>
+	);
 }

@@ -41,6 +41,7 @@ interface ChatViewProps {
 		mode: "plan" | "build",
 		model: string,
 		variant: string,
+		imageUrls: Array<{ url: string; mime: string; filename?: string }>,
 	) => void;
 	onRetrySync: () => void;
 	isSubmitting: boolean;
@@ -135,9 +136,30 @@ export function ChatView({
 		() => buildDisplayItems(streamEvents, toolMap, rootSessionId),
 		[streamEvents, toolMap, rootSessionId],
 	);
+	const initialPromptImages = useMemo(() => {
+		const firstUserMessage = (eventRows ?? []).find(
+			(row) =>
+				(row as Record<string, unknown>).event_type === "user-message" &&
+				Array.isArray((row as Record<string, unknown>).user_message_images),
+		) as Record<string, unknown> | undefined;
+		if (!firstUserMessage) {
+			return undefined;
+		}
+		const rawImages = firstUserMessage.user_message_images;
+		if (!Array.isArray(rawImages) || rawImages.length === 0) {
+			return undefined;
+		}
+		return rawImages.filter(
+			(image): image is { url: string; mime: string; filename?: string } =>
+				typeof image === "object" &&
+				image !== null &&
+				typeof (image as { url?: unknown }).url === "string" &&
+				typeof (image as { mime?: unknown }).mime === "string",
+		);
+	}, [eventRows]);
 	const turns = useMemo(
-		() => splitIntoTurns(initialPrompt, displayItems),
-		[initialPrompt, displayItems],
+		() => splitIntoTurns(initialPrompt, displayItems, initialPromptImages),
+		[initialPrompt, displayItems, initialPromptImages],
 	);
 	const status = useMemo(() => computeStatus(displayItems), [displayItems]);
 	const hasFileChanges = useMemo(
@@ -285,6 +307,7 @@ export function ChatView({
 			defaultMode,
 			defaultModel,
 			defaultVariant ?? "max",
+			[],
 		);
 	};
 	const totalTokens = effectiveSessionRow.total_tokens as

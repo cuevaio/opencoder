@@ -36,6 +36,13 @@
       "when": 1774468513208,
       "tag": "0004_add-selected-variant",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1774536767435,
+      "tag": "0005_lean_vector",
+      "breakpoints": true
     }
   ]
 }

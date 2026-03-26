@@ -35,9 +35,48 @@ export const Route = createFileRoute("/api/agent/continue")({
 					mode?: "plan" | "build";
 					model?: string;
 					variant?: string;
+					imageUrls?: Array<{ url: string; mime: string; filename?: string }>;
 				};
 
 				const { sessionId, prompt, mode } = body;
+
+				// Validate imageUrls if provided
+				const imageUrls = body.imageUrls ?? [];
+				if (imageUrls.length > 10) {
+					return Response.json(
+						{ error: "Too many images. Maximum is 10 per message." },
+						{ status: 400 },
+					);
+				}
+				const allowedMimes = new Set([
+					"image/png",
+					"image/jpeg",
+					"image/gif",
+					"image/webp",
+				]);
+				const blobDomain = ".public.blob.vercel-storage.com";
+				for (const img of imageUrls) {
+					if (!allowedMimes.has(img.mime)) {
+						return Response.json(
+							{ error: `Unsupported image type: ${img.mime}` },
+							{ status: 400 },
+						);
+					}
+					try {
+						const u = new URL(img.url);
+						if (!u.hostname.endsWith(blobDomain)) {
+							return Response.json(
+								{ error: "Image URLs must be Vercel Blob URLs" },
+								{ status: 400 },
+							);
+						}
+					} catch {
+						return Response.json(
+							{ error: "Invalid image URL" },
+							{ status: 400 },
+						);
+					}
+				}
 
 				if (!sessionId || !prompt) {
 					return Response.json(
@@ -115,6 +154,7 @@ export const Route = createFileRoute("/api/agent/continue")({
 							seq: nextSeq,
 							eventType: "user-message",
 							userMessageText: prompt,
+							userMessageImages: imageUrls.length > 0 ? imageUrls : null,
 						});
 						await tx
 							.update(sessions)
@@ -144,6 +184,7 @@ export const Route = createFileRoute("/api/agent/continue")({
 						userEmail,
 						dbSessionId: sessionId,
 						continueSessionId: sessionId,
+						imageUrls,
 					});
 
 					// Write the new triggerRunId separately. Status is already "running",

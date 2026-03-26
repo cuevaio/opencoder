@@ -275,7 +275,10 @@ export class SessionDbWriter {
 	}
 
 	/** Write a user-message event. */
-	async writeUserMessage(text: string): Promise<void> {
+	async writeUserMessage(
+		text: string,
+		images?: Array<{ url: string; mime: string; filename?: string }>,
+	): Promise<void> {
 		try {
 			await this.flushDirtyText();
 			const seq = this.nextSeq();
@@ -285,6 +288,7 @@ export class SessionDbWriter {
 				seq,
 				eventType: "user-message",
 				userMessageText: text,
+				userMessageImages: images?.length ? images : null,
 			});
 		} catch (error) {
 			logger.error("Failed to write user-message", {

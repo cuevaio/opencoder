@@ -16,6 +16,7 @@ import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
 import { Route as AuthedChatRouteImport } from './routes/_authed/chat'
 import { Route as AuthedChatIndexRouteImport } from './routes/_authed/chat.index'
 import { Route as ApiWebhookGithubRouteImport } from './routes/api/webhook/github'
+import { Route as ApiUploadImageRouteImport } from './routes/api/upload/image'
 import { Route as ApiShapesSessionsRouteImport } from './routes/api/shapes/sessions'
 import { Route as ApiShapesSessionEventsRouteImport } from './routes/api/shapes/session-events'
 import { Route as ApiGithubReposRouteImport } from './routes/api/github/repos'
@@ -62,6 +63,11 @@ const AuthedChatIndexRoute = AuthedChatIndexRouteImport.update({
 const ApiWebhookGithubRoute = ApiWebhookGithubRouteImport.update({
   id: '/api/webhook/github',
   path: '/api/webhook/github',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiUploadImageRoute = ApiUploadImageRouteImport.update({
+  id: '/api/upload/image',
+  path: '/api/upload/image',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiShapesSessionsRoute = ApiShapesSessionsRouteImport.update({
@@ -148,6 +154,7 @@ export interface FileRoutesByFullPath {
   '/api/github/repos': typeof ApiGithubReposRoute
   '/api/shapes/session-events': typeof ApiShapesSessionEventsRoute
   '/api/shapes/sessions': typeof ApiShapesSessionsRoute
+  '/api/upload/image': typeof ApiUploadImageRoute
   '/api/webhook/github': typeof ApiWebhookGithubRoute
   '/chat/': typeof AuthedChatIndexRoute
   '/api/agent/sessions/$id': typeof ApiAgentSessionsIdRoute
@@ -168,6 +175,7 @@ export interface FileRoutesByTo {
   '/api/github/repos': typeof ApiGithubReposRoute
   '/api/shapes/session-events': typeof ApiShapesSessionEventsRoute
   '/api/shapes/sessions': typeof ApiShapesSessionsRoute
+  '/api/upload/image': typeof ApiUploadImageRoute
   '/api/webhook/github': typeof ApiWebhookGithubRoute
   '/chat': typeof AuthedChatIndexRoute
   '/api/agent/sessions/$id': typeof ApiAgentSessionsIdRoute
@@ -191,6 +199,7 @@ export interface FileRoutesById {
   '/api/github/repos': typeof ApiGithubReposRoute
   '/api/shapes/session-events': typeof ApiShapesSessionEventsRoute
   '/api/shapes/sessions': typeof ApiShapesSessionsRoute
+  '/api/upload/image': typeof ApiUploadImageRoute
   '/api/webhook/github': typeof ApiWebhookGithubRoute
   '/_authed/chat/': typeof AuthedChatIndexRoute
   '/api/agent/sessions/$id': typeof ApiAgentSessionsIdRoute
@@ -214,6 +223,7 @@ export interface FileRouteTypes {
     | '/api/github/repos'
     | '/api/shapes/session-events'
     | '/api/shapes/sessions'
+    | '/api/upload/image'
     | '/api/webhook/github'
     | '/chat/'
     | '/api/agent/sessions/$id'
@@ -234,6 +244,7 @@ export interface FileRouteTypes {
     | '/api/github/repos'
     | '/api/shapes/session-events'
     | '/api/shapes/sessions'
+    | '/api/upload/image'
     | '/api/webhook/github'
     | '/chat'
     | '/api/agent/sessions/$id'
@@ -256,6 +267,7 @@ export interface FileRouteTypes {
     | '/api/github/repos'
     | '/api/shapes/session-events'
     | '/api/shapes/sessions'
+    | '/api/upload/image'
     | '/api/webhook/github'
     | '/_authed/chat/'
     | '/api/agent/sessions/$id'
@@ -276,6 +288,7 @@ export interface RootRouteChildren {
   ApiGithubReposRoute: typeof ApiGithubReposRoute
   ApiShapesSessionEventsRoute: typeof ApiShapesSessionEventsRoute
   ApiShapesSessionsRoute: typeof ApiShapesSessionsRoute
+  ApiUploadImageRoute: typeof ApiUploadImageRoute
   ApiWebhookGithubRoute: typeof ApiWebhookGithubRoute
 }
 
@@ -328,6 +341,13 @@ declare module '@tanstack/react-router' {
       path: '/api/webhook/github'
       fullPath: '/api/webhook/github'
       preLoaderRoute: typeof ApiWebhookGithubRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/upload/image': {
+      id: '/api/upload/image'
+      path: '/api/upload/image'
+      fullPath: '/api/upload/image'
+      preLoaderRoute: typeof ApiUploadImageRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/shapes/sessions': {
@@ -477,6 +497,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiGithubReposRoute: ApiGithubReposRoute,
   ApiShapesSessionEventsRoute: ApiShapesSessionEventsRoute,
   ApiShapesSessionsRoute: ApiShapesSessionsRoute,
+  ApiUploadImageRoute: ApiUploadImageRoute,
   ApiWebhookGithubRoute: ApiWebhookGithubRoute,
 }
 export const routeTree = rootRouteImport
