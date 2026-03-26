@@ -1,5 +1,5 @@
 import { execSync } from "node:child_process";
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -10,7 +10,19 @@ export interface CloneResult {
 	owner: string;
 }
 
-export function cloneRepo(repoUrl: string, githubToken: string): CloneResult {
+export interface UserIdentity {
+	name: string;
+	email: string;
+}
+
+const COAUTHOR_TRAILER =
+	"Co-authored-by: opencode-agent[bot] <opencode-agent[bot]@users.noreply.github.com>";
+
+export function cloneRepo(
+	repoUrl: string,
+	githubToken: string,
+	user: UserIdentity,
+): CloneResult {
 	const match = repoUrl.match(
 		/github\.com\/([^/]+)\/([^/]+?)(?:\.git)?(?:\/|$)/,
 	);
@@ -30,11 +42,22 @@ export function cloneRepo(repoUrl: string, githubToken: string): CloneResult {
 		timeout: 120_000,
 	});
 
-	execSync(
-		`git config user.email "coder-agent[bot]@users.noreply.github.com"`,
-		{ cwd: cloneDir, stdio: "pipe" },
-	);
-	execSync(`git config user.name "coder-agent[bot]"`, {
+	// Set the commit author to the authenticated user so commits appear under
+	// their GitHub account, with opencode-agent[bot] as co-author.
+	execSync(`git config user.name "${user.name}"`, {
+		cwd: cloneDir,
+		stdio: "pipe",
+	});
+	execSync(`git config user.email "${user.email}"`, {
+		cwd: cloneDir,
+		stdio: "pipe",
+	});
+
+	// Write a commit message template that appends the co-author trailer to
+	// every commit made by the agent in this clone.
+	const templatePath = path.join(tmpDir, ".gitmessage");
+	writeFileSync(templatePath, `\n\n${COAUTHOR_TRAILER}\n`);
+	execSync(`git config commit.template "${templatePath}"`, {
 		cwd: cloneDir,
 		stdio: "pipe",
 	});

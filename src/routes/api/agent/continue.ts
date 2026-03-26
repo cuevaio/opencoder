@@ -27,7 +27,7 @@ export const Route = createFileRoute("/api/agent/continue")({
 					return authResult;
 				}
 
-				const { userId, githubToken } = authResult;
+				const { userId, githubToken, userName, userEmail } = authResult;
 
 				const body = (await request.json()) as {
 					sessionId?: number;
@@ -127,6 +127,8 @@ export const Route = createFileRoute("/api/agent/continue")({
 						variant,
 						githubToken,
 						userId,
+						userName,
+						userEmail,
 						dbSessionId: sessionId,
 						continueSessionId: sessionId,
 					});

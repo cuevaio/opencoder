@@ -35,11 +35,14 @@ export async function getGitHubToken(userId: string): Promise<string | null> {
 
 /**
  * Validate authentication for agent API routes.
- * Returns `{ userId, githubToken }` or a Response error.
+ * Returns `{ userId, githubToken, userName, userEmail }` or a Response error.
  */
 export async function validateAgentAuth(
 	request: Request,
-): Promise<{ userId: string; githubToken: string } | Response> {
+): Promise<
+	| { userId: string; githubToken: string; userName: string; userEmail: string }
+	| Response
+> {
 	const session = await getAuthSession(request);
 	if (!session) {
 		return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -53,5 +56,10 @@ export async function validateAgentAuth(
 		);
 	}
 
-	return { userId: session.user.id, githubToken };
+	return {
+		userId: session.user.id,
+		githubToken,
+		userName: session.user.name,
+		userEmail: session.user.email,
+	};
 }

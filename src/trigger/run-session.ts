@@ -39,6 +39,10 @@ const runSessionSchema = z.object({
 	variant: z.string().min(1).default("max"),
 	githubToken: z.string().min(1),
 	userId: z.string().min(1),
+	/** Display name of the authenticated user — used as the git commit author. */
+	userName: z.string().min(1),
+	/** Email of the authenticated user — used as the git commit author. */
+	userEmail: z.string().min(1),
 	/** DB session ID — created by the API route before triggering the task */
 	dbSessionId: z.number(),
 	/** When set, continue an existing session instead of creating a new one */
@@ -104,7 +108,10 @@ export const runSession = schemaTask({
 		let tmpDir: string | undefined;
 		try {
 			// ── Step 1: Clone repo ──
-			const clone = cloneRepo(payload.repoUrl, payload.githubToken);
+			const clone = cloneRepo(payload.repoUrl, payload.githubToken, {
+				name: payload.userName,
+				email: payload.userEmail,
+			});
 			tmpDir = clone.tmpDir;
 			metadata.set("repository", `${clone.owner}/${clone.repoName}`);
 

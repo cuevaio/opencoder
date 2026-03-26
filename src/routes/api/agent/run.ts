@@ -86,7 +86,7 @@ export const Route = createFileRoute("/api/agent/run")({
 					return authResult;
 				}
 
-				const { userId, githubToken } = authResult;
+				const { userId, githubToken, userName, userEmail } = authResult;
 
 				const body = (await request.json()) as {
 					repoUrl?: string;
@@ -170,6 +170,8 @@ export const Route = createFileRoute("/api/agent/run")({
 						variant,
 						githubToken,
 						userId,
+						userName,
+						userEmail,
 						dbSessionId: createdSessionId,
 					});
 					taskTriggered = true;
