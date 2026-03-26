@@ -77,7 +77,9 @@ export const runSession = schemaTask({
 		const dbWriter = new SessionDbWriter(dbSessionId, payload.userId);
 		// Seed seq from DB so continued sessions append after existing events
 		await dbWriter.init();
-		await dbWriter.writeStatus("Cloning repository...");
+		if (!payload.continueSessionId) {
+			await dbWriter.writeStatus("Cloning repository...");
+		}
 
 		// If continuing, load session data from Postgres
 		let continueData: SessionExportData | null = null;
@@ -95,7 +97,6 @@ export const runSession = schemaTask({
 
 			if (row?.sessionData) {
 				continueData = row.sessionData as SessionExportData;
-				await dbWriter.writeStatus("Importing previous session...");
 			} else {
 				logger.warn("Continue session: no session data found", {
 					continueSessionId: payload.continueSessionId,
@@ -116,8 +117,6 @@ export const runSession = schemaTask({
 			metadata.set("repository", `${clone.owner}/${clone.repoName}`);
 
 			if (payload.continueSessionId) {
-				await dbWriter.writeStatus("Restoring repository state...");
-
 				if (!continueGitState) {
 					const message =
 						"Git state is not available for this session. Start a new session to continue.";
@@ -133,7 +132,6 @@ export const runSession = schemaTask({
 						githubToken: payload.githubToken,
 						state: continueGitState,
 					});
-					await dbWriter.writeStatus("Repository state restored.");
 				} catch (error) {
 					const message =
 						error instanceof Error
@@ -146,7 +144,9 @@ export const runSession = schemaTask({
 
 			// ── Step 2: Start OpenCode server ──
 			metadata.set("status", "starting-agent");
-			await dbWriter.writeStatus("Starting AI agent...");
+			if (!payload.continueSessionId) {
+				await dbWriter.writeStatus("Starting AI agent...");
+			}
 
 			const modelExecution = await resolveModelExecution(
 				payload.userId,
@@ -221,8 +221,8 @@ export const runSession = schemaTask({
 
 				metadata.set("status", "agent-working");
 
-				// Write the user prompt as the first user-message event
-				await dbWriter.writeUserMessage(payload.prompt);
+				// The user-message event is already written by the API route
+				// (run.ts / continue.ts) so the message bubble appears immediately.
 
 				// Send the prompt with user-selected reasoning variant.
 				// OpenCode ignores the variant for models without reasoning capability.
@@ -271,7 +271,6 @@ export const runSession = schemaTask({
 					  }
 					| undefined;
 
-				await dbWriter.writeStatus("Saving repository state...");
 				try {
 					const nextState = captureGitState({
 						cloneDir: clone.cloneDir,
@@ -287,7 +286,6 @@ export const runSession = schemaTask({
 						head: nextState.headOid,
 						branch: nextState.branch,
 					};
-					await dbWriter.writeStatus("Repository state saved.");
 				} catch (error) {
 					const message =
 						error instanceof Error
