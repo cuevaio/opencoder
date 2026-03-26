@@ -11,6 +11,7 @@ import {
 	buildDisplayItems,
 	buildToolMap,
 	findPendingQuestion,
+	hasRoundCompleteInCurrentTurn,
 	splitIntoTurns,
 } from "#/lib/display-items";
 import {
@@ -214,6 +215,20 @@ export function ChatView({
 	const sessionStatus = (effectiveSessionRow?.status as string) ?? "running";
 	const isWorking = sessionStatus === "running";
 	const isIdle = sessionStatus === "idle" || sessionStatus === "completed";
+	const hasCompletedCurrentTurn = useMemo(
+		() => hasRoundCompleteInCurrentTurn(streamEvents),
+		[streamEvents],
+	);
+	const lastTurnHasAssistantMessage = useMemo(() => {
+		const lastTurn = turns.at(-1);
+		if (!lastTurn) return false;
+		return lastTurn.items.some((item) => item.type === "text-block");
+	}, [turns]);
+	const shouldShowPrAction =
+		hasFileChanges &&
+		(isIdle || hasCompletedCurrentTurn) &&
+		lastTurnHasAssistantMessage &&
+		!pendingQuestion;
 
 	// ─── Callbacks ────────────────────────────────────────────
 	const handleAnswer = useCallback(
@@ -380,7 +395,7 @@ export function ChatView({
 							completedTokens={completedTokens}
 							onAnswer={handleAnswer}
 							bottomAction={
-								i === turns.length - 1 && hasFileChanges && isIdle ? (
+								i === turns.length - 1 && shouldShowPrAction ? (
 									<Button
 										type="button"
 										onClick={handleCreateOrUpdatePr}
