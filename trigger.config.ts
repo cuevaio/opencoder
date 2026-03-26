@@ -31,6 +31,33 @@ function ghCliBinary(): BuildExtension {
 	};
 }
 
+function packageManagerBinaries(): BuildExtension {
+	return {
+		name: "package-manager-binaries",
+		onBuildComplete: async (context) => {
+			if (context.target === "dev") return;
+
+			context.addLayer({
+				id: "package-manager-binaries",
+				image: {
+					instructions: [
+						// npm is already available via the Node.js runtime.
+						// Enable pnpm and yarn via corepack, install bun from GitHub releases.
+						`RUN corepack enable pnpm yarn ` +
+							`&& apt-get update && apt-get install -y --no-install-recommends curl ca-certificates unzip ` +
+							`&& curl -fsSL https://github.com/oven-sh/bun/releases/latest/download/bun-linux-x64.zip -o /tmp/bun.zip ` +
+							`&& unzip -o /tmp/bun.zip -d /tmp/bun ` +
+							`&& mv /tmp/bun/bun-linux-x64/bun /usr/local/bin/bun ` +
+							`&& chmod +x /usr/local/bin/bun ` +
+							`&& rm -rf /tmp/bun /tmp/bun.zip ` +
+							`&& apt-get purge -y curl unzip && apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/*`,
+					],
+				},
+			});
+		},
+	};
+}
+
 function opencodeBinary(): BuildExtension {
   return {
     name: "opencode-binary",
@@ -66,7 +93,12 @@ export default defineConfig({
   },
   build: {
     external: ["@opencode-ai/sdk"],
-    extensions: [aptGet({ packages: ["git"] }), opencodeBinary(), ghCliBinary()],
+    extensions: [
+      aptGet({ packages: ["git"] }),
+      packageManagerBinaries(),
+      opencodeBinary(),
+      ghCliBinary(),
+    ],
   },
   machine: "small-2x",
 });
