@@ -66,6 +66,9 @@ export function ChatView({
 	const { configuredKeys } = useProviderKeyStatus();
 	const [showSlowLoadFallback, setShowSlowLoadFallback] = useState(false);
 	const [hasHydratedSession, setHasHydratedSession] = useState(false);
+	const [modeOverride, setModeOverride] = useState<"plan" | "build" | null>(
+		null,
+	);
 
 	// Events collection is scoped to this session.
 	const eventsCollection = useMemo(
@@ -240,9 +243,13 @@ export function ChatView({
 			});
 			if (response.ok) {
 				completedTokens.add(tokenId);
+				// After accepting a plan, switch UI to build mode for the next message
+				if (effectiveSessionRow?.mode === "plan") {
+					setModeOverride("build");
+				}
 			}
 		},
-		[completedTokens],
+		[completedTokens, effectiveSessionRow],
 	);
 
 	const handleCancel = useCallback(async () => {
@@ -316,7 +323,8 @@ export function ChatView({
 
 	// ─── Render ───────────────────────────────────────────────
 	const repoDisplay = (effectiveSessionRow.repo_full_name as string) ?? "";
-	const defaultMode = (effectiveSessionRow.mode as "plan" | "build") || "build";
+	const defaultMode =
+		modeOverride ?? ((effectiveSessionRow.mode as "plan" | "build") || "build");
 	const defaultModel =
 		(effectiveSessionRow.selected_model as string | undefined) ||
 		defaultModelId;
