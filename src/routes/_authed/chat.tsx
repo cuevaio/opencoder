@@ -43,16 +43,9 @@ export const ChatLayoutContext = createContext<ChatLayoutContextValue | null>(
 export function useChatLayoutContext(): ChatLayoutContextValue {
 	const ctx = useContext(ChatLayoutContext);
 	if (!ctx) {
-		// Fallback: create a minimal context (e.g., when route is accessed standalone)
-		const collection = createSessionsCollection();
-		return {
-			sessionsCollection: collection,
-			sessionsSyncError: null,
-			sidebarOpen: false,
-			setSidebarOpen: () => {},
-			isMobile: false,
-			prefetchSessionEvents: () => {},
-		};
+		throw new Error(
+			"useChatLayoutContext must be used within ChatLayoutContext.Provider",
+		);
 	}
 	return ctx;
 }
@@ -111,11 +104,14 @@ function ChatLayout() {
 		}
 	}, [activeSessionId, isMobile, sessionId, sessionEventsPrefetchManager]);
 
+	// Tear down Electric shape subscriptions when ChatLayout unmounts
+	// (e.g., user navigates away from /chat/*).
 	useEffect(() => {
 		return () => {
+			void sessionsCollection.cleanup();
 			void sessionEventsPrefetchManager.destroy();
 		};
-	}, [sessionEventsPrefetchManager]);
+	}, [sessionsCollection, sessionEventsPrefetchManager]);
 
 	const handleSelectSession = (id: number) =>
 		navigate({

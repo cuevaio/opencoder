@@ -74,7 +74,8 @@ export const Route = createFileRoute("/api/shapes/sessions")({
 				shapeUrl.searchParams.set("secret", electricSecret);
 				shapeUrl.searchParams.set("table", "agent_sessions");
 				shapeUrl.searchParams.set("columns", SESSION_COLUMNS);
-				shapeUrl.searchParams.set("where", `user_id = '${userId}'`);
+				shapeUrl.searchParams.set("where", "user_id = $1");
+				shapeUrl.searchParams.set("params", JSON.stringify([userId]));
 
 				// Forward Electric protocol params only
 				url.searchParams.forEach((value, key) => {
