@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppHeader } from "#/components/app-header.tsx";
+import { Wordmark } from "#/components/logo.tsx";
 import { authClient } from "#/lib/auth-client.ts";
 
 export const Route = createFileRoute("/")({
@@ -17,7 +18,7 @@ function HomePage() {
 			{/* Hero */}
 			<main className="app-container flex flex-1 flex-col items-center justify-center py-14 text-center sm:py-20">
 				<h1 className="text-display-fluid font-bold tracking-tight">
-					OpenCoder
+					<Wordmark size={56} />
 				</h1>
 				<p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
 					Run a coding agent on any GitHub repository. Ask questions, fix bugs,
@@ -83,8 +84,8 @@ function HomePage() {
 
 			{/* Footer */}
 			<footer className="border-t border-border/80 bg-background/70 py-6 text-xs text-muted-foreground">
-				<div className="app-container text-center">
-					OpenCoder — built with TanStack Start, Electric SQL, and Trigger.dev
+				<div className="app-container text-center font-mono">
+					opencoder — built with TanStack Start, Electric SQL, and Trigger.dev
 				</div>
 			</footer>
 		</div>

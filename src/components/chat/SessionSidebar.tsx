@@ -1,8 +1,8 @@
 import type { Collection } from "@tanstack/react-db";
 import { useLiveQuery } from "@tanstack/react-db";
-import { useNavigate, useParams } from "@tanstack/react-router";
+import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { LayoutDashboard, Plus } from "lucide-react";
-import { ThemeToggle } from "#/components/theme-toggle.tsx";
+import { Wordmark } from "#/components/logo.tsx";
 
 interface SessionSidebarProps {
 	// Collection passed from the parent layout so it's shared and not re-created
@@ -41,9 +41,9 @@ export function SessionSidebar({
 		<div className="flex h-full min-h-0 flex-col border-r border-border/70 bg-surface-1">
 			{/* Sidebar header */}
 			<div className="flex items-center justify-between border-b border-border/80 px-4 py-3">
-				<span className="text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
-					Sessions
-				</span>
+				<Link to="/" aria-label="opencoder home" className="press-scale">
+					<Wordmark size={14} />
+				</Link>
 				<div className="flex items-center gap-2">
 					<button
 						type="button"
@@ -54,7 +54,6 @@ export function SessionSidebar({
 					>
 						<LayoutDashboard className="h-4 w-4" />
 					</button>
-					<ThemeToggle />
 					<button
 						type="button"
 						onClick={onNewSession}

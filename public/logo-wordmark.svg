@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 296 52" width="296" height="52">
+  <!--
+    opencoder — wordmark (dark / transparent bg)
+    Fira Code 700 @ 52px
+    Both 'o's replaced with x-height blocks (0.548em × 0.600em)
+
+    Fira Code 700 @ 52px metrics:
+      1ch  = 0.600 × 52 = 31.2px
+      x-h  = 0.548 × 52 = 28.5px
+      baseline at y = 52 - (0.32 × 52) = 52 - 16.6 = ~44px from top
+
+    Character positions (each char = 31.2px, start x = 8):
+      [0] o → block  x=8
+      [1] p          x=39.2
+      [2] e          x=70.4
+      [3] n          x=101.6
+      [4] c          x=132.8
+      [5] o → block  x=164.0
+      [6] d          x=195.2
+      [7] e          x=226.4
+      [8] r          x=257.6  → end=288.8
+
+    Block y: baseline(44) - x-height(28.5) = 15.5px from top
+    Block h: 28.5px, w: 31.2px
+  -->
+  <defs>
+    <style>@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@700&amp;display=swap');</style>
+  </defs>
+
+  <!-- Block for first 'o' (index 0) -->
+  <rect x="8" y="15.5" width="31" height="28.5" fill="white"/>
+
+  <!-- "penc" — x=39.2, baseline y=44 -->
+  <text x="39.2" y="44"
+    font-family="'Fira Code','Courier New',monospace"
+    font-size="52" font-weight="700" fill="white"
+    letter-spacing="-0.52">penc</text>
+
+  <!-- Block for second 'o' (index 5) — x=164 -->
+  <rect x="164" y="15.5" width="31" height="28.5" fill="white"/>
+
+  <!-- "der" — x=195.2 -->
+  <text x="195.2" y="44"
+    font-family="'Fira Code','Courier New',monospace"
+    font-size="52" font-weight="700" fill="white"
+    letter-spacing="-0.52">der</text>
+</svg>

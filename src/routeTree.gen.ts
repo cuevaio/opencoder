@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignInRouteImport } from './routes/sign-in'
+import { Route as BrandRouteImport } from './routes/brand'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
@@ -34,6 +35,11 @@ import { Route as ApiAgentSessionsIdRouteImport } from './routes/api/agent/sessi
 const SignInRoute = SignInRouteImport.update({
   id: '/sign-in',
   path: '/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BrandRoute = BrandRouteImport.update({
+  id: '/brand',
+  path: '/brand',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedRoute = AuthedRouteImport.update({
@@ -139,6 +145,7 @@ const ApiAgentSessionsIdRoute = ApiAgentSessionsIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/brand': typeof BrandRoute
   '/sign-in': typeof SignInRoute
   '/chat': typeof AuthedChatRouteWithChildren
   '/dashboard': typeof AuthedDashboardRoute
@@ -161,6 +168,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/brand': typeof BrandRoute
   '/sign-in': typeof SignInRoute
   '/dashboard': typeof AuthedDashboardRoute
   '/chat/$sessionId': typeof AuthedChatSessionIdRoute
@@ -184,6 +192,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authed': typeof AuthedRouteWithChildren
+  '/brand': typeof BrandRoute
   '/sign-in': typeof SignInRoute
   '/_authed/chat': typeof AuthedChatRouteWithChildren
   '/_authed/dashboard': typeof AuthedDashboardRoute
@@ -208,6 +217,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/brand'
     | '/sign-in'
     | '/chat'
     | '/dashboard'
@@ -230,6 +240,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/brand'
     | '/sign-in'
     | '/dashboard'
     | '/chat/$sessionId'
@@ -252,6 +263,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authed'
+    | '/brand'
     | '/sign-in'
     | '/_authed/chat'
     | '/_authed/dashboard'
@@ -276,6 +288,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthedRoute: typeof AuthedRouteWithChildren
+  BrandRoute: typeof BrandRoute
   SignInRoute: typeof SignInRoute
   ApiAgentAnswerRoute: typeof ApiAgentAnswerRoute
   ApiAgentCancelRoute: typeof ApiAgentCancelRoute
@@ -299,6 +312,13 @@ declare module '@tanstack/react-router' {
       path: '/sign-in'
       fullPath: '/sign-in'
       preLoaderRoute: typeof SignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/brand': {
+      id: '/brand'
+      path: '/brand'
+      fullPath: '/brand'
+      preLoaderRoute: typeof BrandRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authed': {
@@ -485,6 +505,7 @@ const ApiAgentSessionsRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthedRoute: AuthedRouteWithChildren,
+  BrandRoute: BrandRoute,
   SignInRoute: SignInRoute,
   ApiAgentAnswerRoute: ApiAgentAnswerRoute,
   ApiAgentCancelRoute: ApiAgentCancelRoute,

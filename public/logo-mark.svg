@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 32" width="72" height="32">
+  <!--
+    opencoder — mark (two blocks, white on transparent)
+    Matches the two 'o' blocks from the wordmark
+    Two rects: 31×28.5px each, gap = 0.08em × 52px ≈ 4.2px → rounded to 4px
+    Total width: 31 + 4 + 31 = 66px, centered in 72px → start x = 3
+    Height: 28.5px, centered in 32px → y = 1.75 ≈ 2
+  -->
+  <rect x="3"  y="2" width="31" height="28" fill="white"/>
+  <rect x="38" y="2" width="31" height="28" fill="white"/>
+</svg>

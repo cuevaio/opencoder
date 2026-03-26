@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { Wordmark } from "#/components/logo.tsx";
 import { authClient } from "#/lib/auth-client.ts";
 
 export const Route = createFileRoute("/sign-in")({
@@ -20,11 +21,9 @@ function SignInPage() {
 	return (
 		<div className="app-shell flex items-center justify-center px-[var(--page-gutter)] py-8 pb-safe pt-safe">
 			<div className="surface-panel w-full max-w-sm space-y-6 p-5 sm:p-6">
-				<div className="text-center">
-					<h1 className="text-2xl font-bold tracking-tight">
-						Sign in to OpenCoder
-					</h1>
-					<p className="mt-2 text-sm text-muted-foreground">
+				<div className="flex flex-col items-center gap-3 text-center">
+					<Wordmark size={24} />
+					<p className="text-sm text-muted-foreground">
 						Connect your GitHub account to get started
 					</p>
 				</div>

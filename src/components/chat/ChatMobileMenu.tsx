@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Menu, X } from "lucide-react";
 import { useCallback, useState } from "react";
+import { Wordmark } from "#/components/logo.tsx";
 import { ThemeToggle } from "#/components/theme-toggle.tsx";
 import {
 	Sheet,
@@ -51,7 +52,14 @@ export function ChatMobileMenu() {
 					<SheetHeader className="border-b border-border px-4 py-4">
 						<div className="flex items-center justify-between">
 							<SheetTitle className="text-base font-semibold">
-								OpenCoder
+								<Link
+									to="/"
+									onClick={() => setOpen(false)}
+									className="inline-flex press-scale"
+									aria-label="opencoder home"
+								>
+									<Wordmark size={14} />
+								</Link>
 							</SheetTitle>
 							<button
 								type="button"

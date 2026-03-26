@@ -59,6 +59,7 @@ export function useChatLayoutContext(): ChatLayoutContextValue {
 
 export const Route = createFileRoute("/_authed/chat")({
 	ssr: false,
+	head: () => ({ meta: [{ title: "opencoder — chat" }] }),
 	// Prevent TanStack Router from re-evaluating this route when Electric
 	// delivers data changes — there is no loader to re-run, but without this
 	// the router may still trigger unnecessary component re-renders.

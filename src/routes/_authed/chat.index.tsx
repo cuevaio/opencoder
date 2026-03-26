@@ -1,9 +1,10 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { PanelLeftOpen } from "lucide-react";
 import { useCallback, useState } from "react";
 import { ChatFooter } from "#/components/chat/ChatFooter.tsx";
 import { ChatMobileMenu } from "#/components/chat/ChatMobileMenu.tsx";
 import { RepoSelector } from "#/components/chat/RepoSelector.tsx";
+import { Mark, Wordmark } from "#/components/logo.tsx";
 import { useLastSessionSettings } from "#/hooks/use-last-session-settings.ts";
 import { useProviderKeyStatus } from "#/hooks/use-provider-keys.ts";
 import { useChatLayoutContext } from "#/routes/_authed/chat.tsx";
@@ -87,22 +88,28 @@ function NewSessionPage() {
 					>
 						<PanelLeftOpen className="h-5 w-5" />
 					</button>
-					<span className="text-sm leading-none font-semibold tracking-tight text-foreground">
-						New Session
-					</span>
+					<Link
+						to="/"
+						className="inline-flex press-scale"
+						aria-label="opencoder home"
+					>
+						<Mark size={16} />
+					</Link>
 				</div>
 				<ChatMobileMenu />
 			</div>
 
 			<main className="app-container flex w-full min-h-0 flex-1 flex-col justify-center py-6 sm:py-10">
 				<div className="surface-panel mx-auto w-full max-w-3xl p-4 sm:p-6">
-					<h1 className="mb-2 text-2xl font-bold tracking-tight">
-						New Session
-					</h1>
-					<p className="mb-8 text-sm text-muted-foreground">
-						Select a GitHub repository and describe what you want the agent to
-						do.
-					</p>
+					<div className="mb-8">
+						<Link
+							to="/"
+							className="inline-flex press-scale"
+							aria-label="opencoder home"
+						>
+							<Wordmark size={36} />
+						</Link>
+					</div>
 
 					<div className="mb-6">
 						<RepoSelector

@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Menu, X } from "lucide-react";
 import { useCallback, useState } from "react";
+import { Wordmark } from "#/components/logo.tsx";
 import { ThemeToggle } from "#/components/theme-toggle.tsx";
 import { authClient } from "#/lib/auth-client.ts";
 import type { Theme } from "#/lib/theme.ts";
@@ -39,11 +40,8 @@ export function AppHeader({ variant = "public" }: AppHeaderProps) {
 		<header className="border-b border-border/80 bg-background pt-safe">
 			<div className="app-container flex h-16 items-center justify-between">
 				{/* Logo */}
-				<Link
-					to="/"
-					className="text-lg font-semibold tracking-tight text-foreground press-scale"
-				>
-					OpenCoder
+				<Link to="/" className="press-scale" aria-label="opencoder home">
+					<Wordmark size={20} />
 				</Link>
 
 				{/* Desktop nav */}
@@ -98,7 +96,7 @@ export function AppHeader({ variant = "public" }: AppHeaderProps) {
 					<SheetHeader className="border-b border-border px-4 py-4">
 						<div className="flex items-center justify-between">
 							<SheetTitle className="text-base font-semibold">
-								OpenCoder
+								<Wordmark size={16} />
 							</SheetTitle>
 							<button
 								type="button"

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>opencoder — logo system</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --font-mono: 'Fira Code', 'SF Mono', monospace;
+      --font-sans: 'Fira Sans', system-ui, sans-serif;
+      --x:  0.548; /* x-height ratio */
+      --ch: 0.600; /* 1ch ratio */
+    }
+
+    body {
+      background: #111;
+      color: #fff;
+      font-family: var(--font-sans);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 56px;
+      padding: 72px 32px 96px;
+      min-height: 100vh;
+    }
+
+    .page-title {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 400;
+      letter-spacing: 0.18em;
+      color: #2a2a2a;
+      text-transform: uppercase;
+    }
+
+    .section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      width: 100%;
+      max-width: 900px;
+    }
+
+    .label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 400;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #282828;
+    }
+
+    .bg-dark {
+      background: #0d0d0d;
+      border: 1px solid #1c1c1c;
+      border-radius: 3px;
+      padding: 52px 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .bg-light {
+      background: #f5f5f5;
+      border: 1px solid #e2e2e2;
+      border-radius: 3px;
+      padding: 52px 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+    }
+
+    hr { width: 100%; max-width: 780px; border: none; border-top: 1px solid #181818; }
+
+    /* ── Wordmark: both 'o's → blocks ── */
+    .wm {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      line-height: 1;
+      color: #fff;
+      letter-spacing: -0.01em;
+      display: inline-flex;
+      align-items: baseline;
+    }
+    .wm.light { color: #0d0d0d; }
+
+    /* x-height block, 1ch wide, bottom on baseline */
+    .wm .b {
+      display: inline-block;
+      width: calc(var(--ch) * 1em);
+      height: calc(var(--x) * 1em);
+      vertical-align: 0;
+      background: currentColor;
+      flex-shrink: 0;
+    }
+
+    /* ── Scale row ── */
+    .sizes-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 44px;
+      background: #0d0d0d;
+      border: 1px solid #1c1c1c;
+      border-radius: 3px;
+      padding: 36px 52px;
+      width: 100%;
+    }
+    .card { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+
+    /* ── App icons ── */
+    .icon-box {
+      background: #161616;
+      border: 1px solid #282828;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .icons-row {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-end;
+      gap: 28px;
+      background: #090909;
+      border: 1px solid #181818;
+      border-radius: 3px;
+      padding: 36px 48px;
+      width: 100%;
+    }
+    .icon-card { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+    /* Two-block mark: side by side with a tight gap */
+    .mark {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 0.08em;
+      font-size: inherit;
+    }
+    .mark .b {
+      display: inline-block;
+      width: calc(var(--ch) * 1em);
+      height: calc(var(--x) * 1em);
+      vertical-align: 0;
+      background: white;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <span class="page-title">opencoder — logo system</span>
+
+  <!-- ── Wordmark dark ── -->
+  <div class="section">
+    <div class="label">Wordmark — dark</div>
+    <div class="bg-dark">
+      <!-- █penc█der — both o's become blocks -->
+      <span class="wm" style="font-size:52px"><span class="b"></span>penc<span class="b"></span>der</span>
+    </div>
+  </div>
+
+  <!-- ── Wordmark light ── -->
+  <div class="section">
+    <div class="label">Wordmark — light</div>
+    <div class="bg-light">
+      <span class="wm light" style="font-size:52px"><span class="b"></span>penc<span class="b"></span>der</span>
+    </div>
+  </div>
+
+  <hr />
+
+  <!-- ── Scale ── -->
+  <div class="section">
+    <div class="label">Scale</div>
+    <div class="sizes-row">
+      <div class="card">
+        <span class="wm" style="font-size:48px"><span class="b"></span>penc<span class="b"></span>der</span>
+        <span class="label">48</span>
+      </div>
+      <div class="card">
+        <span class="wm" style="font-size:28px"><span class="b"></span>penc<span class="b"></span>der</span>
+        <span class="label">28</span>
+      </div>
+      <div class="card">
+        <span class="wm" style="font-size:18px"><span class="b"></span>penc<span class="b"></span>der</span>
+        <span class="label">18</span>
+      </div>
+      <div class="card">
+        <span class="wm" style="font-size:13px"><span class="b"></span>penc<span class="b"></span>der</span>
+        <span class="label">13</span>
+      </div>
+    </div>
+  </div>
+
+  <hr />
+
+  <!-- ── App icons: two-block mark ── -->
+  <div class="section">
+    <div class="label">App icon</div>
+    <div class="icons-row">
+
+      <div class="icon-card">
+        <div class="icon-box" style="width:180px;height:180px;border-radius:40px;">
+          <span class="mark" style="font-size:52px">
+            <span class="b"></span><span class="b"></span>
+          </span>
+        </div>
+        <span class="label">180</span>
+      </div>
+
+      <div class="icon-card">
+        <div class="icon-box" style="width:96px;height:96px;border-radius:21px;">
+          <span class="mark" style="font-size:28px">
+            <span class="b"></span><span class="b"></span>
+          </span>
+        </div>
+        <span class="label">96</span>
+      </div>
+
+      <div class="icon-card">
+        <div class="icon-box" style="width:64px;height:64px;border-radius:14px;">
+          <span class="mark" style="font-size:18px">
+            <span class="b"></span><span class="b"></span>
+          </span>
+        </div>
+        <span class="label">64</span>
+      </div>
+
+      <div class="icon-card">
+        <div class="icon-box" style="width:32px;height:32px;border-radius:4px;">
+          <span class="mark" style="font-size:9px">
+            <span class="b"></span><span class="b"></span>
+          </span>
+        </div>
+        <span class="label">32</span>
+      </div>
+
+      <div class="icon-card">
+        <div class="icon-box" style="width:16px;height:16px;border-radius:2px;">
+          <span class="mark" style="font-size:4.5px">
+            <span class="b"></span><span class="b"></span>
+          </span>
+        </div>
+        <span class="label">16</span>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>
