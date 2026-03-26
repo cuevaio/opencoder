@@ -344,25 +344,18 @@ export function ChatView({
 							{status}
 						</span>
 					)}
-					{isIdle && totalTokens != null && (
+					{totalTokens != null && (
 						<span className="hidden rounded-full bg-surface-2 px-2 py-1 text-[11px] text-muted-foreground sm:inline">
 							{totalTokens.toLocaleString()} tokens
 						</span>
 					)}
-					{isIdle && totalCost != null && totalCost > 0 && (
+					{totalCost != null && totalCost > 0 && (
 						<span className="hidden rounded-full bg-surface-2 px-2 py-1 text-[11px] text-muted-foreground sm:inline">
 							${(totalCost / 1_000_000).toFixed(4)}
 						</span>
 					)}
 				</div>
 				<div className="flex shrink-0 items-center gap-1">
-					<button
-						type="button"
-						onClick={onNewSession}
-						className="inline-flex min-h-[44px] items-center rounded-md border border-border bg-background/70 px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground press-scale"
-					>
-						New session
-					</button>
 					<ChatMobileMenu />
 				</div>
 			</div>
