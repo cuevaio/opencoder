@@ -38,6 +38,7 @@
     "@tanstack/router-plugin": "^1.132.0",
     "@trigger.dev/build": "^4.4.3",
     "@trigger.dev/sdk": "^4.4.3",
+    "@vercel/blob": "^2.3.1",
     "better-auth": "^1.5.3",
     "better-sqlite3": "^12.8.0",
     "class-variance-authority": "^0.7.1",

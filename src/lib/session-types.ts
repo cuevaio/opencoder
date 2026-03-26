@@ -32,7 +32,11 @@ export type StreamEvent =
 			answers: string[][];
 	  }
 	| { type: "round-complete" }
-	| { type: "user-message"; text: string }
+	| {
+			type: "user-message";
+			text: string;
+			images?: Array<{ url: string; mime: string; filename?: string }>;
+	  }
 	| { type: "aborted" };
 
 // ─── Persisted session data (stored in Postgres jsonb) ───

@@ -346,6 +346,7 @@ export const sessionEvents = pgTable(
 
 		// ── User-message fields ──
 		userMessageText: text("user_message_text"),
+		userMessageImages: jsonb("user_message_images"), // Array<{ url: string; mime: string; filename?: string }>
 
 		// ── Full Part JSON for lossless round-trip ──
 		partData: jsonb("part_data"),

@@ -94,8 +94,47 @@ export const Route = createFileRoute("/api/agent/run")({
 					mode?: "plan" | "build";
 					model?: string;
 					variant?: string;
+					imageUrls?: Array<{ url: string; mime: string; filename?: string }>;
 				};
 				const { repoUrl, prompt, mode } = body;
+
+				// Validate imageUrls if provided
+				const imageUrls = body.imageUrls ?? [];
+				if (imageUrls.length > 10) {
+					return Response.json(
+						{ error: "Too many images. Maximum is 10 per message." },
+						{ status: 400 },
+					);
+				}
+				const allowedMimes = new Set([
+					"image/png",
+					"image/jpeg",
+					"image/gif",
+					"image/webp",
+				]);
+				const blobDomain = ".public.blob.vercel-storage.com";
+				for (const img of imageUrls) {
+					if (!allowedMimes.has(img.mime)) {
+						return Response.json(
+							{ error: `Unsupported image type: ${img.mime}` },
+							{ status: 400 },
+						);
+					}
+					try {
+						const u = new URL(img.url);
+						if (!u.hostname.endsWith(blobDomain)) {
+							return Response.json(
+								{ error: "Image URLs must be Vercel Blob URLs" },
+								{ status: 400 },
+							);
+						}
+					} catch {
+						return Response.json(
+							{ error: "Invalid image URL" },
+							{ status: 400 },
+						);
+					}
+				}
 				if (body.model && !isAllowedModel(body.model)) {
 					return Response.json(
 						{ error: "Unsupported model selected" },
@@ -173,6 +212,7 @@ export const Route = createFileRoute("/api/agent/run")({
 						userName,
 						userEmail,
 						dbSessionId: createdSessionId,
+						imageUrls,
 					});
 					taskTriggered = true;
 

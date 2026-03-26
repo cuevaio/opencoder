@@ -31,6 +31,7 @@ function ChatSessionPage() {
 			mode: "plan" | "build",
 			model: string,
 			variant: string,
+			imageUrls: Array<{ url: string; mime: string; filename?: string }>,
 		) => {
 			setIsSubmitting(true);
 			setError(null);
@@ -39,7 +40,14 @@ function ChatSessionPage() {
 				const response = await fetch("/api/agent/continue", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ sessionId, prompt, mode, model, variant }),
+					body: JSON.stringify({
+						sessionId,
+						prompt,
+						mode,
+						model,
+						variant,
+						imageUrls,
+					}),
 				});
 
 				const data = (await response.json()) as { error?: string };

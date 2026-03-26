@@ -39,11 +39,16 @@ export type DisplayItem =
 			answers: string[][];
 	  }
 	| { type: "round-complete" }
-	| { type: "user-message"; text: string }
+	| {
+			type: "user-message";
+			text: string;
+			images?: Array<{ url: string; mime: string; filename?: string }>;
+	  }
 	| { type: "aborted" };
 
 export type Turn = {
 	prompt: string;
+	images?: Array<{ url: string; mime: string; filename?: string }>;
 	items: DisplayItem[];
 };
 
@@ -291,7 +296,11 @@ export function buildDisplayItems(
 				break;
 
 			case "user-message":
-				items.push({ type: "user-message", text: evt.text });
+				items.push({
+					type: "user-message",
+					text: evt.text,
+					images: evt.images,
+				});
 				break;
 
 			case "aborted":
@@ -315,21 +324,34 @@ export function buildDisplayItems(
 export function splitIntoTurns(
 	initialPrompt: string,
 	items: DisplayItem[],
+	initialImages?: Array<{ url: string; mime: string; filename?: string }>,
 ): Turn[] {
 	const turns: Turn[] = [];
 	let currentPrompt = initialPrompt;
+	let currentImages:
+		| Array<{ url: string; mime: string; filename?: string }>
+		| undefined = initialImages;
 	let currentItems: DisplayItem[] = [];
 
 	for (const item of items) {
 		if (item.type === "user-message") {
-			turns.push({ prompt: currentPrompt, items: currentItems });
+			turns.push({
+				prompt: currentPrompt,
+				images: currentImages,
+				items: currentItems,
+			});
 			currentPrompt = item.text;
+			currentImages = item.images;
 			currentItems = [];
 		} else {
 			currentItems.push(item);
 		}
 	}
-	turns.push({ prompt: currentPrompt, items: currentItems });
+	turns.push({
+		prompt: currentPrompt,
+		images: currentImages,
+		items: currentItems,
+	});
 	return turns;
 }
 

@@ -47,6 +47,16 @@ const runSessionSchema = z.object({
 	dbSessionId: z.number(),
 	/** When set, continue an existing session instead of creating a new one */
 	continueSessionId: z.number().optional(),
+	/** Image attachments to pass to OpenCode alongside the text prompt */
+	imageUrls: z
+		.array(
+			z.object({
+				url: z.url(),
+				mime: z.string(),
+				filename: z.string().optional(),
+			}),
+		)
+		.default([]),
 });
 
 export type RunSessionPayload = z.infer<typeof runSessionSchema>;
@@ -222,7 +232,24 @@ export const runSession = schemaTask({
 				metadata.set("status", "agent-working");
 
 				// Write the user prompt as the first user-message event
-				await dbWriter.writeUserMessage(payload.prompt);
+				await dbWriter.writeUserMessage(
+					payload.prompt,
+					payload.imageUrls.length > 0 ? payload.imageUrls : undefined,
+				);
+
+				// Build prompt parts: text + any image attachments
+				const promptParts: Array<
+					| { type: "text"; text: string }
+					| { type: "file"; mime: string; url: string; filename?: string }
+				> = [{ type: "text", text: payload.prompt }];
+				for (const img of payload.imageUrls) {
+					promptParts.push({
+						type: "file",
+						mime: img.mime,
+						url: img.url,
+						filename: img.filename,
+					});
+				}
 
 				// Send the prompt with user-selected reasoning variant.
 				// OpenCode ignores the variant for models without reasoning capability.
@@ -232,7 +259,7 @@ export const runSession = schemaTask({
 						providerID: modelExecution.providerID,
 						modelID: modelExecution.modelID,
 					},
-					parts: [{ type: "text", text: payload.prompt }],
+					parts: promptParts,
 					agent: payload.mode,
 					variant: payload.variant,
 				});
