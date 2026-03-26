@@ -76,6 +76,16 @@ export function ChatView({
 		[sessionId],
 	);
 
+	// Tear down the Electric shape subscription when the session changes or
+	// the component unmounts. React's cleanup closes over the previous
+	// eventsCollection value, so the old subscription is terminated while
+	// the new one (from useMemo) remains active.
+	useEffect(() => {
+		return () => {
+			void eventsCollection.cleanup();
+		};
+	}, [eventsCollection]);
+
 	// ─── Live queries ─────────────────────────────────────────
 	const { data: eventRows } = useLiveQuery(
 		(q) =>

@@ -24,14 +24,17 @@ interface ElectricCollectionOptions {
 	onError?: (error: unknown) => void;
 }
 
-/** Handle Electric client errors and optionally notify caller. */
+/** Handle Electric client errors: log context and optionally notify caller. */
 function onElectricError(
 	error: unknown,
 	context: ElectricCollectionContext,
 	handler?: (error: unknown) => void,
 ) {
-	void error;
-	void context;
+	console.error("[electric-collection]", context.collectionId, {
+		shapeUrl: context.shapeUrl,
+		sessionId: context.sessionId,
+		error: error instanceof Error ? error.message : error,
+	});
 	handler?.(error);
 }
 
