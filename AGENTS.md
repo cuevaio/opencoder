@@ -68,6 +68,10 @@ Notes:
 - For non-trivial changes, create/update a plan first using OpenCode tooling.
 - Do not commit generated noise unrelated to the task.
 - Keep commits focused and descriptive.
+- **Always append the following co-author trailer to every commit message:**
+  ```
+  Co-authored-by: opencode-agent[bot] <opencode-agent[bot]@users.noreply.github.com>
+  ```
 
 ## Code Style Rules
 
