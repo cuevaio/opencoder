@@ -41,7 +41,7 @@ function HomePage() {
 						</Link>
 					)}
 					<a
-						href="https://github.com/cuevaio/coder"
+						href="https://github.com/cuevaio/opencoder"
 						target="_blank"
 						rel="noopener noreferrer"
 						className="rounded-md border border-border bg-background/60 px-5 py-3 text-sm font-semibold hover:bg-muted press-scale"
