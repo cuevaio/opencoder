@@ -1,4 +1,4 @@
-import type { DisplayItem } from "#/lib/display-items.ts";
+import type { DisplayItem, ToolState } from "#/lib/display-items.ts";
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -51,6 +51,33 @@ export function parseTodoProgress(raw: unknown[]): TodoProgress {
 }
 
 /**
+ * Extract the raw todos array from a todowrite ToolState.
+ *
+ * Tries `tool.input.todos` first (available when streaming live).
+ * Falls back to parsing `tool.output` as JSON (the Electric SQL shape
+ * proxy excludes `tool_input` to keep payloads light, but `tool_output`
+ * for todowrite contains the todos array).
+ */
+export function extractTodosFromTool(tool: ToolState): unknown[] | null {
+	if (Array.isArray(tool.input?.todos)) {
+		return tool.input.todos as unknown[];
+	}
+
+	if (tool.output) {
+		try {
+			const parsed: unknown = JSON.parse(tool.output);
+			if (Array.isArray(parsed)) {
+				return parsed;
+			}
+		} catch {
+			// output is not valid JSON — ignore
+		}
+	}
+
+	return null;
+}
+
+/**
  * Scan display items backward for the latest todowrite tool call
  * and return its parsed progress state.
  */
@@ -59,12 +86,11 @@ export function extractLatestTodoProgress(
 ): TodoProgress | null {
 	for (let i = items.length - 1; i >= 0; i--) {
 		const item = items[i];
-		if (
-			item?.type === "tool-call" &&
-			item.tool.tool === "todowrite" &&
-			Array.isArray(item.tool.input?.todos)
-		) {
-			return parseTodoProgress(item.tool.input.todos as unknown[]);
+		if (item?.type === "tool-call" && item.tool.tool === "todowrite") {
+			const todos = extractTodosFromTool(item.tool);
+			if (todos) {
+				return parseTodoProgress(todos);
+			}
 		}
 	}
 	return null;
