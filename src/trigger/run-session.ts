@@ -211,10 +211,10 @@ export const runSession = schemaTask({
 					);
 					logger.info("Imported previous session", { sessionId });
 				} else {
-					// Create a fresh session
-					const sessionResult = await client.session.create({
-						title: `Coder: ${clone.repoName}`,
-					});
+				// Create a fresh session — no title so OpenCode uses its default
+				// "New session - <ISO timestamp>" format, which triggers ensureTitle()
+				// to generate an AI-summarized title from the first user message.
+				const sessionResult = await client.session.create({});
 					const newId = sessionResult.data?.id;
 					if (!newId) {
 						throw new Error("Failed to create OpenCode session");
