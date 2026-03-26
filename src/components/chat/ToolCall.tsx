@@ -1,7 +1,7 @@
 import { ChevronRight } from "lucide-react";
 import { useState } from "react";
 import type { ToolState } from "#/lib/display-items";
-import { parseTodoProgress } from "#/lib/todo-state.ts";
+import { extractTodosFromTool, parseTodoProgress } from "#/lib/todo-state.ts";
 import { getToolInfo } from "#/lib/tool-info";
 import { cn } from "#/lib/utils.ts";
 import { TodoList } from "./TodoList";
@@ -32,7 +32,7 @@ function StatusIndicator({ status }: { status: ToolState["status"] }) {
 }
 
 function TodoWriteToolCall({ tool }: ToolCallProps) {
-	const progress = parseTodoProgress((tool.input?.todos as unknown[]) ?? []);
+	const progress = parseTodoProgress(extractTodosFromTool(tool) ?? []);
 
 	return (
 		<div className="rounded-xl border border-border/80 bg-surface-1 text-xs">
@@ -53,7 +53,7 @@ function TodoWriteToolCall({ tool }: ToolCallProps) {
 }
 
 export function ToolCall({ tool }: ToolCallProps) {
-	if (tool.tool === "todowrite" && Array.isArray(tool.input?.todos)) {
+	if (tool.tool === "todowrite" && extractTodosFromTool(tool)) {
 		return <TodoWriteToolCall tool={tool} />;
 	}
 	return <GenericToolCall tool={tool} />;
