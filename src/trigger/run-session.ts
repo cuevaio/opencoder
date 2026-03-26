@@ -167,6 +167,7 @@ export const runSession = schemaTask({
 				clone.cloneDir,
 				abortController.signal,
 				modelExecution.fullModel,
+				payload.githubToken,
 			);
 
 			try {

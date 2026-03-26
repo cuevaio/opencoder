@@ -13,6 +13,7 @@ export async function startOpenCodeServer(
 	cloneDir: string,
 	signal: AbortSignal,
 	model: string,
+	githubToken: string,
 ): Promise<OpenCodeInstance> {
 	const binDir = path.join(process.cwd(), "bin");
 	process.env.PATH = `/usr/local/bin:${binDir}:${process.env.PATH}`;
@@ -22,6 +23,10 @@ export async function startOpenCodeServer(
 	delete process.env.OPENCODE_SERVER_PASSWORD;
 	delete process.env.OPENCODE_SERVER_USERNAME;
 	process.env.OPENCODE_EXPERIMENTAL_PLAN_MODE = "1";
+
+	// Expose the user's GitHub token so the agent can use `gh` CLI commands
+	// (e.g. `gh pr create`) without needing a separate `gh auth login`.
+	process.env.GH_TOKEN = githubToken;
 
 	// Must chdir to clone dir so OpenCode operates on the repo
 	const originalCwd = process.cwd();
