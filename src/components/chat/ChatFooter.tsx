@@ -18,8 +18,6 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover.tsx";
 import { Textarea } from "../ui/textarea.tsx";
 
-const CREATE_PR_PROMPT = "create pr";
-
 interface ChatFooterProps {
 	onSubmit: (
 		text: string,
@@ -120,12 +118,6 @@ export function ChatFooter({
 		onSubmit(text.trim(), mode, model, variant);
 		setText("");
 	}, [text, mode, model, variant, isSubmitting, disabled, isWorking, onSubmit]);
-
-	const handleCreatePrSubmit = useCallback(() => {
-		if (isSubmitting || disabled || isWorking) return;
-		onSubmit(CREATE_PR_PROMPT, mode, model, variant);
-		setAdvancedOpen(false);
-	}, [mode, model, variant, isSubmitting, disabled, isWorking, onSubmit]);
 
 	const handleCancel = useCallback(() => {
 		if (!isWorking || !onCancel || disabled || isSubmitting) return;
@@ -239,7 +231,7 @@ export function ChatFooter({
 							</PopoverContent>
 						</Popover>
 
-						{/* Advanced options popover (thinking, mode, create PR, end session) */}
+						{/* Advanced options popover (thinking, mode) */}
 						<Popover open={advancedOpen} onOpenChange={setAdvancedOpen}>
 							<PopoverTrigger asChild>
 								<Button
@@ -322,16 +314,6 @@ export function ChatFooter({
 										</button>
 									</div>
 								</div>
-
-								<Button
-									type="button"
-									onClick={handleCreatePrSubmit}
-									disabled={isSubmitting || disabled || isWorking}
-									variant="outline"
-									className="h-10 w-full px-2 text-[11px]"
-								>
-									Create PR
-								</Button>
 							</PopoverContent>
 						</Popover>
 					</div>
