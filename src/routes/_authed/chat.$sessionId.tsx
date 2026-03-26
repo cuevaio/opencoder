@@ -1,7 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
 import { ChatView } from "#/components/chat/ChatView.tsx";
-import { useChatLayoutContext } from "#/routes/_authed/chat.tsx";
 
 export const Route = createFileRoute("/_authed/chat/$sessionId")({
 	// Prevent router re-evaluation on Electric data changes
@@ -17,9 +16,6 @@ function ChatSessionPage() {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [syncAttempt, setSyncAttempt] = useState(0);
-
-	// Reuse the shared sessionsCollection from the chat layout
-	const { sessionsCollection } = useChatLayoutContext();
 
 	const handleNewSession = useCallback(() => {
 		navigate({ to: "/chat" });
@@ -80,7 +76,6 @@ function ChatSessionPage() {
 		<ChatView
 			key={`${sessionId.toString()}-${syncAttempt.toString()}`}
 			sessionId={sessionId}
-			sessionsCollection={sessionsCollection}
 			onNewSession={handleNewSession}
 			onFollowup={handleFollowup}
 			onRetrySync={handleRetrySync}

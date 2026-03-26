@@ -31,6 +31,7 @@ import { Route as ApiAgentCancelRouteImport } from './routes/api/agent/cancel'
 import { Route as ApiAgentAnswerRouteImport } from './routes/api/agent/answer'
 import { Route as AuthedChatSessionIdRouteImport } from './routes/_authed/chat.$sessionId'
 import { Route as ApiAgentSessionsIdRouteImport } from './routes/api/agent/sessions.$id'
+import { Route as ApiAgentSessionsIdEventsRouteImport } from './routes/api/agent/sessions.$id.events'
 
 const SignInRoute = SignInRouteImport.update({
   id: '/sign-in',
@@ -142,6 +143,12 @@ const ApiAgentSessionsIdRoute = ApiAgentSessionsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ApiAgentSessionsRoute,
 } as any)
+const ApiAgentSessionsIdEventsRoute =
+  ApiAgentSessionsIdEventsRouteImport.update({
+    id: '/events',
+    path: '/events',
+    getParentRoute: () => ApiAgentSessionsIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -164,7 +171,8 @@ export interface FileRoutesByFullPath {
   '/api/upload/image': typeof ApiUploadImageRoute
   '/api/webhook/github': typeof ApiWebhookGithubRoute
   '/chat/': typeof AuthedChatIndexRoute
-  '/api/agent/sessions/$id': typeof ApiAgentSessionsIdRoute
+  '/api/agent/sessions/$id': typeof ApiAgentSessionsIdRouteWithChildren
+  '/api/agent/sessions/$id/events': typeof ApiAgentSessionsIdEventsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -186,7 +194,8 @@ export interface FileRoutesByTo {
   '/api/upload/image': typeof ApiUploadImageRoute
   '/api/webhook/github': typeof ApiWebhookGithubRoute
   '/chat': typeof AuthedChatIndexRoute
-  '/api/agent/sessions/$id': typeof ApiAgentSessionsIdRoute
+  '/api/agent/sessions/$id': typeof ApiAgentSessionsIdRouteWithChildren
+  '/api/agent/sessions/$id/events': typeof ApiAgentSessionsIdEventsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -211,7 +220,8 @@ export interface FileRoutesById {
   '/api/upload/image': typeof ApiUploadImageRoute
   '/api/webhook/github': typeof ApiWebhookGithubRoute
   '/_authed/chat/': typeof AuthedChatIndexRoute
-  '/api/agent/sessions/$id': typeof ApiAgentSessionsIdRoute
+  '/api/agent/sessions/$id': typeof ApiAgentSessionsIdRouteWithChildren
+  '/api/agent/sessions/$id/events': typeof ApiAgentSessionsIdEventsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -237,6 +247,7 @@ export interface FileRouteTypes {
     | '/api/webhook/github'
     | '/chat/'
     | '/api/agent/sessions/$id'
+    | '/api/agent/sessions/$id/events'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -259,6 +270,7 @@ export interface FileRouteTypes {
     | '/api/webhook/github'
     | '/chat'
     | '/api/agent/sessions/$id'
+    | '/api/agent/sessions/$id/events'
   id:
     | '__root__'
     | '/'
@@ -283,6 +295,7 @@ export interface FileRouteTypes {
     | '/api/webhook/github'
     | '/_authed/chat/'
     | '/api/agent/sessions/$id'
+    | '/api/agent/sessions/$id/events'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -461,6 +474,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAgentSessionsIdRouteImport
       parentRoute: typeof ApiAgentSessionsRoute
     }
+    '/api/agent/sessions/$id/events': {
+      id: '/api/agent/sessions/$id/events'
+      path: '/events'
+      fullPath: '/api/agent/sessions/$id/events'
+      preLoaderRoute: typeof ApiAgentSessionsIdEventsRouteImport
+      parentRoute: typeof ApiAgentSessionsIdRoute
+    }
   }
 }
 
@@ -491,12 +511,23 @@ const AuthedRouteChildren: AuthedRouteChildren = {
 const AuthedRouteWithChildren =
   AuthedRoute._addFileChildren(AuthedRouteChildren)
 
+interface ApiAgentSessionsIdRouteChildren {
+  ApiAgentSessionsIdEventsRoute: typeof ApiAgentSessionsIdEventsRoute
+}
+
+const ApiAgentSessionsIdRouteChildren: ApiAgentSessionsIdRouteChildren = {
+  ApiAgentSessionsIdEventsRoute: ApiAgentSessionsIdEventsRoute,
+}
+
+const ApiAgentSessionsIdRouteWithChildren =
+  ApiAgentSessionsIdRoute._addFileChildren(ApiAgentSessionsIdRouteChildren)
+
 interface ApiAgentSessionsRouteChildren {
-  ApiAgentSessionsIdRoute: typeof ApiAgentSessionsIdRoute
+  ApiAgentSessionsIdRoute: typeof ApiAgentSessionsIdRouteWithChildren
 }
 
 const ApiAgentSessionsRouteChildren: ApiAgentSessionsRouteChildren = {
-  ApiAgentSessionsIdRoute: ApiAgentSessionsIdRoute,
+  ApiAgentSessionsIdRoute: ApiAgentSessionsIdRouteWithChildren,
 }
 
 const ApiAgentSessionsRouteWithChildren =
