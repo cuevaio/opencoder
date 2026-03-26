@@ -397,7 +397,6 @@ export function ChatView({
 							<ChatFooter
 								onSubmit={onFollowup}
 								onCancel={handleCancel}
-								onEndSession={onNewSession}
 								isWorking={isWorking}
 								isSubmitting={isSubmitting}
 								disabled={false}

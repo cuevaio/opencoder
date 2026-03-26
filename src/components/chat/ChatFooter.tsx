@@ -28,7 +28,6 @@ interface ChatFooterProps {
 		variant: string,
 	) => void;
 	onCancel?: () => void;
-	onEndSession?: () => void;
 	/** Called whenever model, variant, or mode changes so the parent can persist it. */
 	onSettingsChange?: (settings: {
 		model: string;
@@ -61,7 +60,6 @@ function getRoutingInfo(
 export function ChatFooter({
 	onSubmit,
 	onCancel,
-	onEndSession,
 	onSettingsChange,
 	isWorking = false,
 	isSubmitting = false,
@@ -334,20 +332,6 @@ export function ChatFooter({
 								>
 									Create PR
 								</Button>
-
-								{onEndSession && (
-									<Button
-										type="button"
-										onClick={() => {
-											onEndSession();
-											setAdvancedOpen(false);
-										}}
-										variant="ghost"
-										className="h-10 w-full justify-start px-2 text-[11px] text-muted-foreground"
-									>
-										End session
-									</Button>
-								)}
 							</PopoverContent>
 						</Popover>
 					</div>
