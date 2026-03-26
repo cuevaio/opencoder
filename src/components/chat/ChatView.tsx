@@ -358,14 +358,14 @@ export function ChatView({
 							completedTokens={completedTokens}
 							onAnswer={handleAnswer}
 							bottomAction={
-								i === turns.length - 1 && hasFileChanges ? (
+								i === turns.length - 1 && hasFileChanges && isIdle ? (
 									<Button
 										type="button"
 										onClick={handleCreateOrUpdatePr}
-										disabled={isWorking || isSubmitting}
-										variant="outline"
-										size="sm"
-										className="h-8"
+										disabled={isSubmitting}
+										variant="default"
+										size="default"
+										className="w-full"
 									>
 										{hasExistingPr ? "Update PR" : "Create PR"}
 									</Button>

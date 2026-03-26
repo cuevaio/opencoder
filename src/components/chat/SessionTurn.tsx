@@ -50,7 +50,7 @@ export function SessionTurn({
 				/>
 			))}
 
-			{bottomAction ? <div>{bottomAction}</div> : null}
+			{bottomAction ? <div className="pt-1">{bottomAction}</div> : null}
 		</div>
 	);
 }
