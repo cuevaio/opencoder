@@ -11,6 +11,8 @@ describe("resolveSessionEventSource", () => {
 		).toEqual({
 			useElectricEvents: true,
 			useNeonEvents: false,
+			preferredSource: "electric",
+			requireNeonCatchupToSeq: undefined,
 		});
 	});
 
@@ -24,6 +26,8 @@ describe("resolveSessionEventSource", () => {
 			).toEqual({
 				useElectricEvents: false,
 				useNeonEvents: true,
+				preferredSource: "neon",
+				requireNeonCatchupToSeq: undefined,
 			});
 		}
 	});
@@ -37,6 +41,8 @@ describe("resolveSessionEventSource", () => {
 		).toEqual({
 			useElectricEvents: false,
 			useNeonEvents: true,
+			preferredSource: "neon",
+			requireNeonCatchupToSeq: undefined,
 		});
 	});
 
@@ -50,6 +56,25 @@ describe("resolveSessionEventSource", () => {
 		).toEqual({
 			useElectricEvents: true,
 			useNeonEvents: true,
+			preferredSource: "neon",
+			requireNeonCatchupToSeq: undefined,
+		});
+	});
+
+	it("requires Neon catch-up when Electric has newer seqs", () => {
+		expect(
+			resolveSessionEventSource({
+				sessionStatus: "running",
+				hasFreshSessionStatus: true,
+				electricSyncError: "sync failed",
+				latestElectricSeq: 320,
+				latestNeonSeq: 300,
+			}),
+		).toEqual({
+			useElectricEvents: true,
+			useNeonEvents: true,
+			preferredSource: "neon",
+			requireNeonCatchupToSeq: 320,
 		});
 	});
 });

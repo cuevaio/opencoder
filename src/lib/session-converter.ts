@@ -122,12 +122,26 @@ export interface SessionEventRow {
 	part_data?: unknown;
 }
 
+interface DbRowsToStreamEventsOptions {
+	skipFirstUserMessage?: boolean;
+}
+
 /**
  * Convert session_events DB rows (from Electric/TanStack DB)
  * into StreamEvent[] for the display pipeline.
  */
 export function dbRowsToStreamEvents(rows: SessionEventRow[]): StreamEvent[] {
+	return dbRowsToStreamEventsWithOptions(rows, {
+		skipFirstUserMessage: true,
+	});
+}
+
+export function dbRowsToStreamEventsWithOptions(
+	rows: SessionEventRow[],
+	options?: DbRowsToStreamEventsOptions,
+): StreamEvent[] {
 	const events: StreamEvent[] = [];
+	const skipFirstUserMessage = options?.skipFirstUserMessage ?? true;
 
 	// Build a set of message IDs that belong to user messages.
 	// User message parts (text) should NOT be rendered as agent text-blocks —
@@ -144,8 +158,8 @@ export function dbRowsToStreamEvents(rows: SessionEventRow[]): StreamEvent[] {
 	}
 
 	// Track how many "user-message" events we've emitted.
-	// The first one is the initial prompt already passed to splitIntoTurns()
-	// as initialPrompt — so we skip it to avoid duplication.
+	// By default, the first one is skipped because initialPrompt is supplied
+	// separately. Windowed/paged callers can disable that behavior.
 	let userMessageCount = 0;
 
 	for (const row of rows) {
@@ -208,9 +222,7 @@ export function dbRowsToStreamEvents(rows: SessionEventRow[]): StreamEvent[] {
 			case "user-message":
 				if (row.user_message_text) {
 					userMessageCount++;
-					// The first user-message is the initialPrompt, already passed to
-					// splitIntoTurns() separately — skip it to avoid duplication.
-					if (userMessageCount > 1) {
+					if (!skipFirstUserMessage || userMessageCount > 1) {
 						events.push({
 							type: "user-message",
 							text: row.user_message_text,

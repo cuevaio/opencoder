@@ -98,9 +98,24 @@ export interface SessionEventRowApi {
 	updated_at?: string;
 }
 
-interface SessionEventsQueryInput {
+export interface SessionEventsQueryInput {
 	afterSeq?: number;
+	beforeSeq?: number;
 	limit?: number;
+	includeHeavy?: boolean;
+}
+
+export interface SessionEventsPageInfo {
+	oldestSeq: number | null;
+	newestSeq: number | null;
+	hasMoreBefore: boolean;
+	hasMoreAfter: boolean;
+	watermarkSeq: number | null;
+}
+
+export interface SessionEventsPage {
+	events: SessionEventRowApi[];
+	pageInfo: SessionEventsPageInfo;
 }
 
 export const sessionEventsQueryOptions = (
@@ -113,15 +128,23 @@ export const sessionEventsQueryOptions = (
 			id,
 			"events",
 			input?.afterSeq ?? null,
+			input?.beforeSeq ?? null,
 			input?.limit ?? null,
+			input?.includeHeavy ?? false,
 		],
 		queryFn: async (): Promise<SessionEventRowApi[]> => {
 			const params = new URLSearchParams();
 			if (typeof input?.afterSeq === "number") {
 				params.set("after_seq", String(input.afterSeq));
 			}
+			if (typeof input?.beforeSeq === "number") {
+				params.set("before_seq", String(input.beforeSeq));
+			}
 			if (typeof input?.limit === "number") {
 				params.set("limit", String(input.limit));
+			}
+			if (input?.includeHeavy) {
+				params.set("include_heavy", "true");
 			}
 
 			const query = params.toString();
@@ -130,9 +153,101 @@ export const sessionEventsQueryOptions = (
 			);
 			if (res.status === 404) return [];
 			if (!res.ok) throw new Error("Failed to fetch session events");
-			const data = (await res.json()) as { events: SessionEventRowApi[] };
+			const data = (await res.json()) as {
+				events: SessionEventRowApi[];
+				pageInfo?: SessionEventsPageInfo;
+			};
 			return data.events ?? [];
 		},
 		staleTime: 5_000,
 		gcTime: 5 * 60_000,
+	});
+
+export const sessionEventsPageQueryOptions = (
+	id: number,
+	input?: SessionEventsQueryInput,
+) =>
+	queryOptions({
+		queryKey: [
+			"sessions",
+			id,
+			"events-page",
+			input?.afterSeq ?? null,
+			input?.beforeSeq ?? null,
+			input?.limit ?? null,
+			input?.includeHeavy ?? false,
+		],
+		queryFn: async (): Promise<SessionEventsPage> => {
+			const params = new URLSearchParams();
+			if (typeof input?.afterSeq === "number") {
+				params.set("after_seq", String(input.afterSeq));
+			}
+			if (typeof input?.beforeSeq === "number") {
+				params.set("before_seq", String(input.beforeSeq));
+			}
+			if (typeof input?.limit === "number") {
+				params.set("limit", String(input.limit));
+			}
+			if (input?.includeHeavy) {
+				params.set("include_heavy", "true");
+			}
+
+			const query = params.toString();
+			const res = await fetch(
+				`/api/agent/sessions/${id}/events${query ? `?${query}` : ""}`,
+			);
+			if (res.status === 404) {
+				return {
+					events: [],
+					pageInfo: {
+						oldestSeq: null,
+						newestSeq: null,
+						hasMoreBefore: false,
+						hasMoreAfter: false,
+						watermarkSeq: null,
+					},
+				};
+			}
+			if (!res.ok) throw new Error("Failed to fetch session events page");
+			const data = (await res.json()) as {
+				events?: SessionEventRowApi[];
+				pageInfo?: Partial<SessionEventsPageInfo>;
+			};
+
+			return {
+				events: data.events ?? [],
+				pageInfo: {
+					oldestSeq: data.pageInfo?.oldestSeq ?? null,
+					newestSeq: data.pageInfo?.newestSeq ?? null,
+					hasMoreBefore: Boolean(data.pageInfo?.hasMoreBefore),
+					hasMoreAfter: Boolean(data.pageInfo?.hasMoreAfter),
+					watermarkSeq: data.pageInfo?.watermarkSeq ?? null,
+				},
+			};
+		},
+		staleTime: 5_000,
+		gcTime: 5 * 60_000,
+	});
+
+export const sessionEventDetailQueryOptions = (id: number, partId: string) =>
+	queryOptions({
+		queryKey: ["sessions", id, "events", "part", partId],
+		queryFn: async (): Promise<SessionEventRowApi | null> => {
+			if (!partId) {
+				return null;
+			}
+
+			const params = new URLSearchParams({
+				part_id: partId,
+				include_heavy: "true",
+			});
+
+			const res = await fetch(`/api/agent/sessions/${id}/events?${params}`);
+			if (res.status === 404) return null;
+			if (!res.ok) throw new Error("Failed to fetch session event details");
+			const data = (await res.json()) as { event: SessionEventRowApi | null };
+			return data.event ?? null;
+		},
+		staleTime: 60_000,
+		gcTime: 10 * 60_000,
 	});

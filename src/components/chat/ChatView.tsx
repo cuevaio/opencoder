@@ -1,7 +1,14 @@
 import { useLiveQuery } from "@tanstack/react-db";
 import { useQuery } from "@tanstack/react-query";
 import { PanelLeftOpen, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import { useAutoScroll } from "#/hooks/use-auto-scroll";
 import { useProviderKeyStatus } from "#/hooks/use-provider-keys.ts";
 import { computeStatus } from "#/lib/agent-status";
@@ -15,11 +22,12 @@ import {
 	splitIntoTurns,
 } from "#/lib/display-items";
 import {
-	sessionEventsQueryOptions,
+	type SessionEventsPageInfo,
+	sessionEventsPageQueryOptions,
 	sessionQueryOptions,
 } from "#/lib/queries.ts";
 import {
-	dbRowsToStreamEvents,
+	dbRowsToStreamEventsWithOptions,
 	type SessionEventRow,
 } from "#/lib/session-converter";
 import { resolveSessionEventSource } from "#/lib/session-event-source.ts";
@@ -34,6 +42,17 @@ import { SessionTurn } from "./SessionTurn";
 
 const CREATE_PR_PROMPT = "create pr";
 const UPDATE_PR_PROMPT = "update pr";
+const MOBILE_INITIAL_VISIBLE_TURNS = 24;
+const MOBILE_VISIBLE_TURN_STEP = 24;
+const OLDER_PAGE_LIMIT = 400;
+
+const EMPTY_PAGE_INFO: SessionEventsPageInfo = {
+	oldestSeq: null,
+	newestSeq: null,
+	hasMoreBefore: false,
+	hasMoreAfter: false,
+	watermarkSeq: null,
+};
 
 interface ChatViewProps {
 	sessionId: number;
@@ -64,7 +83,8 @@ export function ChatView({
 }: ChatViewProps) {
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const bottomRef = useRef<HTMLDivElement>(null);
-	const { setSidebarOpen } = useChatLayoutContext();
+	const pendingLoadOlderAnchor = useRef<number | null>(null);
+	const { setSidebarOpen, isMobile } = useChatLayoutContext();
 	const { configuredKeys } = useProviderKeyStatus();
 	const [showSlowLoadFallback, setShowSlowLoadFallback] = useState(false);
 	const [electricSyncError, setElectricSyncError] = useState<string | null>(
@@ -73,10 +93,19 @@ export function ChatView({
 	const [electricEventRows, setElectricEventRows] = useState<SessionEventRow[]>(
 		[],
 	);
+	const [mergedRowsBySeq, setMergedRowsBySeq] = useState<
+		Map<number, SessionEventRow>
+	>(new Map());
+	const [pageInfo, setPageInfo] =
+		useState<SessionEventsPageInfo>(EMPTY_PAGE_INFO);
+	const [isLoadingOlder, setIsLoadingOlder] = useState(false);
 	const [modeOverride, setModeOverride] = useState<"plan" | "build" | null>(
 		null,
 	);
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+	const [visibleMobileTurns, setVisibleMobileTurns] = useState(
+		MOBILE_INITIAL_VISIBLE_TURNS,
+	);
 
 	const {
 		data: sessionDetail,
@@ -93,26 +122,30 @@ export function ChatView({
 
 	const effectiveSessionRow = sessionDetail ?? null;
 	const sessionStatus = sessionDetail?.status;
-	const { useElectricEvents, useNeonEvents } = resolveSessionEventSource({
-		sessionStatus,
-		electricSyncError,
-		hasFreshSessionStatus: hasSessionFetchedAfterMount,
-	});
+	const latestElectricSeq = electricEventRows.at(-1)?.seq ?? null;
+	const { useElectricEvents, useNeonEvents, requireNeonCatchupToSeq } =
+		resolveSessionEventSource({
+			sessionStatus,
+			electricSyncError,
+			hasFreshSessionStatus: hasSessionFetchedAfterMount,
+			latestElectricSeq,
+			latestNeonSeq: pageInfo.newestSeq,
+		});
 
-	const { data: neonEventRows = [] } = useQuery({
-		...sessionEventsQueryOptions(sessionId),
+	const { data: neonEventsPage } = useQuery({
+		...sessionEventsPageQueryOptions(sessionId, {
+			limit: isMobile ? 600 : 2_000,
+			includeHeavy: false,
+		}),
 		enabled: useNeonEvents,
 		refetchInterval: useElectricEvents ? 3_000 : false,
 		refetchOnWindowFocus: true,
 	});
-
-	const eventRows = useMemo(
-		() =>
-			(useElectricEvents && !electricSyncError
-				? electricEventRows
-				: neonEventRows) as SessionEventRow[],
-		[electricEventRows, electricSyncError, neonEventRows, useElectricEvents],
-	);
+	const eventRows = useMemo(() => {
+		const rows = Array.from(mergedRowsBySeq.values());
+		rows.sort((a, b) => a.seq - b.seq);
+		return rows;
+	}, [mergedRowsBySeq]);
 
 	useEffect(() => {
 		if (!useElectricEvents) {
@@ -120,6 +153,34 @@ export function ChatView({
 			setElectricEventRows([]);
 		}
 	}, [useElectricEvents]);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: reset merged state when route session changes
+	useEffect(() => {
+		setMergedRowsBySeq(new Map());
+		setPageInfo(EMPTY_PAGE_INFO);
+		setVisibleMobileTurns(MOBILE_INITIAL_VISIBLE_TURNS);
+	}, [sessionId]);
+
+	useEffect(() => {
+		if (!neonEventsPage) {
+			return;
+		}
+
+		setPageInfo((current) => mergePageInfo(current, neonEventsPage.pageInfo));
+		setMergedRowsBySeq((current) =>
+			mergeRowsBySeq(current, neonEventsPage.events, "neon"),
+		);
+	}, [neonEventsPage]);
+
+	useEffect(() => {
+		if (electricEventRows.length === 0) {
+			return;
+		}
+
+		setMergedRowsBySeq((current) =>
+			mergeRowsBySeq(current, electricEventRows, "electric"),
+		);
+	}, [electricEventRows]);
 
 	useEffect(() => {
 		if (useElectricEvents && electricEventRows.length > 0) {
@@ -142,8 +203,21 @@ export function ChatView({
 	}, [effectiveSessionRow]);
 
 	// ─── Build StreamEvent[] from DB rows ─────────────────────
+	const firstWindowUserMessage = useMemo(
+		() =>
+			eventRows.find(
+				(row) =>
+					row.event_type === "user-message" &&
+					typeof row.user_message_text === "string" &&
+					row.user_message_text.length > 0,
+			),
+		[eventRows],
+	);
 	const streamEvents = useMemo(
-		() => dbRowsToStreamEvents(eventRows),
+		() =>
+			dbRowsToStreamEventsWithOptions(eventRows, {
+				skipFirstUserMessage: true,
+			}),
 		[eventRows],
 	);
 
@@ -169,7 +243,10 @@ export function ChatView({
 	}, [streamEvents]);
 
 	// ─── Display pipeline ────────────────────────────────────
-	const initialPrompt = (effectiveSessionRow?.initialPrompt as string) ?? "";
+	const initialPrompt =
+		firstWindowUserMessage?.user_message_text ??
+		(effectiveSessionRow?.initialPrompt as string) ??
+		"";
 	const rootSessionId =
 		typeof effectiveSessionRow?.opencodeSessionId === "string" &&
 		effectiveSessionRow.opencodeSessionId.length > 0
@@ -185,21 +262,11 @@ export function ChatView({
 		[streamEvents, toolMap, rootSessionId],
 	);
 	const initialPromptImages = useMemo(() => {
-		const firstUserMessage = eventRows.find(
-			(row) =>
-				(row as unknown as Record<string, unknown>).event_type ===
-					"user-message" &&
-				Array.isArray(
-					(row as unknown as Record<string, unknown>).user_message_images,
-				),
-		) as Record<string, unknown> | undefined;
-		if (!firstUserMessage) {
-			return undefined;
-		}
-		const rawImages = firstUserMessage.user_message_images;
+		const rawImages = firstWindowUserMessage?.user_message_images;
 		if (!Array.isArray(rawImages) || rawImages.length === 0) {
 			return undefined;
 		}
+
 		return rawImages.filter(
 			(image): image is { url: string; mime: string; filename?: string } =>
 				typeof image === "object" &&
@@ -207,7 +274,7 @@ export function ChatView({
 				typeof (image as { url?: unknown }).url === "string" &&
 				typeof (image as { mime?: unknown }).mime === "string",
 		);
-	}, [eventRows]);
+	}, [firstWindowUserMessage]);
 	const turns = useMemo(
 		() => splitIntoTurns(initialPrompt, displayItems, initialPromptImages),
 		[initialPrompt, displayItems, initialPromptImages],
@@ -256,8 +323,78 @@ export function ChatView({
 		() => findPendingQuestion(displayItems, completedTokens),
 		[displayItems, completedTokens],
 	);
+	const autoScrollTrigger = useMemo(() => {
+		const lastRow = eventRows.at(-1);
+		return `${eventRows.length.toString()}:${lastRow?.seq?.toString() ?? "0"}:${lastRow?.updated_at ?? ""}`;
+	}, [eventRows]);
+	const hiddenMobileTurns =
+		isMobile && turns.length > visibleMobileTurns
+			? turns.length - visibleMobileTurns
+			: 0;
+	const shouldShowLoadOlderButton =
+		isMobile && (hiddenMobileTurns > 0 || pageInfo.hasMoreBefore);
+	const visibleStartIndex = isMobile ? hiddenMobileTurns : 0;
+	const visibleTurns = useMemo(
+		() => turns.slice(visibleStartIndex),
+		[turns, visibleStartIndex],
+	);
 
-	useAutoScroll(scrollRef, bottomRef, streamEvents);
+	const handleLoadOlderTurns = useCallback(async () => {
+		const scrollEl = scrollRef.current;
+		if (scrollEl) {
+			pendingLoadOlderAnchor.current =
+				scrollEl.scrollHeight - scrollEl.scrollTop;
+		}
+
+		if (pageInfo.hasMoreBefore && typeof pageInfo.oldestSeq === "number") {
+			setIsLoadingOlder(true);
+			try {
+				const params = new URLSearchParams({
+					before_seq: String(pageInfo.oldestSeq),
+					limit: String(OLDER_PAGE_LIMIT),
+				});
+				const response = await fetch(
+					`/api/agent/sessions/${sessionId}/events?${params}`,
+				);
+				if (response.ok) {
+					const data = (await response.json()) as {
+						events?: SessionEventRow[];
+						pageInfo?: SessionEventsPageInfo;
+					};
+
+					if (Array.isArray(data.events) && data.events.length > 0) {
+						setMergedRowsBySeq((current) =>
+							mergeRowsBySeq(current, data.events ?? [], "neon"),
+						);
+					}
+
+					if (data.pageInfo) {
+						setPageInfo((current) => mergePageInfo(current, data.pageInfo));
+					}
+				}
+			} finally {
+				setIsLoadingOlder(false);
+			}
+		}
+
+		setVisibleMobileTurns((count) => count + MOBILE_VISIBLE_TURN_STEP);
+	}, [pageInfo.hasMoreBefore, pageInfo.oldestSeq, sessionId]);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: preserve scroll anchor after loading older turns
+	useLayoutEffect(() => {
+		const anchor = pendingLoadOlderAnchor.current;
+		const scrollEl = scrollRef.current;
+		if (anchor == null || !scrollEl) {
+			return;
+		}
+
+		scrollEl.scrollTop = Math.max(0, scrollEl.scrollHeight - anchor);
+		pendingLoadOlderAnchor.current = null;
+	}, [visibleStartIndex]);
+
+	useAutoScroll(scrollRef, bottomRef, autoScrollTrigger, {
+		suppress: isLoadingOlder,
+	});
 
 	// ─── Session status ───────────────────────────────────────
 	const isWorking = sessionStatus === "running";
@@ -427,7 +564,10 @@ export function ChatView({
 				}).format(totalTokens)
 			: null;
 	const shouldShowReconnectNotice =
-		useElectricEvents && (Boolean(electricSyncError) || useNeonEvents);
+		useElectricEvents &&
+		(Boolean(electricSyncError) ||
+			useNeonEvents ||
+			typeof requireNeonCatchupToSeq === "number");
 	const shouldShowInlineError =
 		shouldShowReconnectNotice && Boolean(electricSyncError);
 
@@ -495,29 +635,53 @@ export function ChatView({
 				className="scroll-region flex-1 px-[var(--page-gutter)] py-5 sm:py-6"
 			>
 				<div className="chat-container space-y-6 sm:space-y-7">
-					{turns.map((turn, i) => (
-						<SessionTurn
-							key={`turn-${turn.prompt.slice(0, 20)}-${i.toString()}`}
-							turn={turn}
-							pendingQuestion={pendingQuestion}
-							completedTokens={completedTokens}
-							onAnswer={handleAnswer}
-							bottomAction={
-								i === turns.length - 1 && shouldShowPrAction ? (
-									<Button
-										type="button"
-										onClick={handleCreateOrUpdatePr}
-										disabled={isSubmitting}
-										variant="default"
-										size="default"
-										className="w-full"
-									>
-										{hasExistingPr ? "Update PR" : "Create PR"}
-									</Button>
-								) : null
-							}
-						/>
-					))}
+					{shouldShowLoadOlderButton && (
+						<div className="flex justify-center">
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={handleLoadOlderTurns}
+								disabled={isLoadingOlder}
+							>
+								{isLoadingOlder
+									? "Loading older messages..."
+									: hiddenMobileTurns > 0
+										? `Load older messages (${hiddenMobileTurns.toString()} hidden)`
+										: "Load older messages"}
+							</Button>
+						</div>
+					)}
+
+					{visibleTurns.map((turn, i) => {
+						const turnIndex = visibleStartIndex + i;
+						const isLastTurn = turnIndex === turns.length - 1;
+
+						return (
+							<SessionTurn
+								key={`turn-${turn.prompt.slice(0, 20)}-${turnIndex.toString()}`}
+								sessionId={sessionId}
+								turn={turn}
+								pendingQuestion={pendingQuestion}
+								completedTokens={completedTokens}
+								onAnswer={handleAnswer}
+								bottomAction={
+									isLastTurn && shouldShowPrAction ? (
+										<Button
+											type="button"
+											onClick={handleCreateOrUpdatePr}
+											disabled={isSubmitting}
+											variant="default"
+											size="default"
+											className="w-full"
+										>
+											{hasExistingPr ? "Update PR" : "Create PR"}
+										</Button>
+									) : null
+								}
+							/>
+						);
+					})}
 				</div>
 				<div ref={bottomRef} />
 			</div>
@@ -538,7 +702,9 @@ export function ChatView({
 						<div className="mb-2 rounded-lg border border-border bg-surface-2 px-3 py-2 text-xs text-muted-foreground">
 							{shouldShowInlineError
 								? `Session sync issue: ${electricSyncError ?? "temporary sync interruption"}`
-								: "Reconnecting session updates..."}
+								: typeof requireNeonCatchupToSeq === "number"
+									? `Catching up session updates (target seq ${requireNeonCatchupToSeq.toString()})...`
+									: "Reconnecting session updates..."}
 						</div>
 					)}
 					{!pendingQuestion && (
@@ -613,4 +779,120 @@ function RunningSessionEvents({
 	}, [eventsCollection]);
 
 	return null;
+}
+
+type EventSourceKind = "electric" | "neon";
+
+function mergeRowsBySeq(
+	current: Map<number, SessionEventRow>,
+	incomingRows: SessionEventRow[],
+	source: EventSourceKind,
+): Map<number, SessionEventRow> {
+	let next = current;
+
+	for (const incoming of incomingRows) {
+		const existing = next.get(incoming.seq);
+		if (!existing) {
+			if (next === current) {
+				next = new Map(current);
+			}
+			next.set(incoming.seq, incoming);
+			continue;
+		}
+
+		const preferred = preferSessionRow(existing, incoming, source);
+		if (preferred !== existing) {
+			if (next === current) {
+				next = new Map(current);
+			}
+			next.set(incoming.seq, preferred);
+		}
+	}
+
+	return next;
+}
+
+function preferSessionRow(
+	existing: SessionEventRow,
+	incoming: SessionEventRow,
+	source: EventSourceKind,
+): SessionEventRow {
+	const existingScore = rowRichnessScore(existing);
+	const incomingScore = rowRichnessScore(incoming);
+	if (incomingScore > existingScore) {
+		return incoming;
+	}
+	if (incomingScore < existingScore) {
+		return existing;
+	}
+
+	const existingUpdatedAt = parseTime(existing.updated_at);
+	const incomingUpdatedAt = parseTime(incoming.updated_at);
+	if (incomingUpdatedAt > existingUpdatedAt) {
+		return incoming;
+	}
+	if (incomingUpdatedAt < existingUpdatedAt) {
+		return existing;
+	}
+
+	return source === "neon" ? incoming : existing;
+}
+
+function rowRichnessScore(row: SessionEventRow): number {
+	let score = 0;
+	if (row.tool_input != null) score += 2;
+	if (typeof row.tool_output === "string" && row.tool_output.length > 0)
+		score += 2;
+	if (row.tool_metadata != null) score += 1;
+	if (row.part_data != null) score += 1;
+	if (typeof row.text === "string" && row.text.length > 0) score += 1;
+	return score;
+}
+
+function parseTime(value?: string): number {
+	if (!value) {
+		return 0;
+	}
+	const ms = Date.parse(value);
+	return Number.isNaN(ms) ? 0 : ms;
+}
+
+function mergePageInfo(
+	current: SessionEventsPageInfo,
+	next: SessionEventsPageInfo,
+): SessionEventsPageInfo {
+	const oldestSeq = minNullable(current.oldestSeq, next.oldestSeq);
+	const newestSeq = maxNullable(current.newestSeq, next.newestSeq);
+	const extendingBefore =
+		typeof next.oldestSeq === "number" &&
+		(typeof current.oldestSeq !== "number" ||
+			next.oldestSeq < current.oldestSeq);
+	const extendingAfter =
+		typeof next.newestSeq === "number" &&
+		(typeof current.newestSeq !== "number" ||
+			next.newestSeq > current.newestSeq);
+
+	return {
+		oldestSeq,
+		newestSeq,
+		hasMoreBefore: extendingBefore
+			? next.hasMoreBefore
+			: current.hasMoreBefore || next.hasMoreBefore,
+		hasMoreAfter: extendingAfter
+			? next.hasMoreAfter
+			: current.hasMoreAfter || next.hasMoreAfter,
+		watermarkSeq: maxNullable(current.watermarkSeq, next.watermarkSeq),
+	};
+}
+
+function minNullable(a: number | null, b: number | null): number | null {
+	if (typeof a !== "number") return b;
+	if (typeof b !== "number") return a;
+	return Math.min(a, b);
+}
+
+function maxNullable(a: number | null, b: number | null): number | null {
+	if (typeof a !== "number") return b;
+	if (typeof b !== "number") return a;
+	return Math.max(a, b);
 }
