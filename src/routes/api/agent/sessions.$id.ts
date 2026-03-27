@@ -69,9 +69,9 @@ export const Route = createFileRoute("/api/agent/sessions/$id")({
 				}
 
 				try {
-					// If the session is still running, cancel it first
+					// If the session is still running, end the Trigger.dev run first
 					if (row.status === "running" && row.triggerRunId) {
-						await cancelTriggerRun(row.triggerRunId, userId);
+						await endTriggerRun(row.triggerRunId, userId);
 					}
 
 					// Delete the session — cascade constraints handle session_events
@@ -104,35 +104,40 @@ function parseSessionId(request: Request): number | null {
 	return Number.isNaN(id) ? null : id;
 }
 
-/**
- * Best-effort cancellation of a Trigger.dev run by setting
- * the `cancelRequested` metadata flag.
- */
-async function cancelTriggerRun(runId: string, userId: string): Promise<void> {
-	try {
-		const run = await runs.retrieve(runId);
-		const currentMeta = (run.metadata as Record<string, unknown>) || {};
+const TERMINAL_TRIGGER_STATUSES = new Set([
+	"COMPLETED",
+	"CANCELED",
+	"FAILED",
+	"CRASHED",
+	"SYSTEM_FAILURE",
+	"EXPIRED",
+	"TIMED_OUT",
+]);
 
-		// Verify ownership via Trigger metadata
-		if (currentMeta.userId !== userId) return;
+async function endTriggerRun(runId: string, userId: string): Promise<void> {
+	const run = await runs.retrieve(runId);
+	const currentMeta = (run.metadata as Record<string, unknown>) || {};
 
-		const triggerApiUrl =
-			process.env.TRIGGER_API_URL || "https://api.trigger.dev";
-		const triggerSecretKey = process.env.TRIGGER_SECRET_KEY;
-
-		if (!triggerSecretKey) return;
-
-		await fetch(`${triggerApiUrl}/api/v1/runs/${runId}/metadata`, {
-			method: "PUT",
-			headers: {
-				"Content-Type": "application/json",
-				Authorization: `Bearer ${triggerSecretKey}`,
-			},
-			body: JSON.stringify({
-				metadata: { ...currentMeta, cancelRequested: true },
-			}),
-		});
-	} catch {
-		// Best-effort: if cancellation fails we still proceed with deletion
+	// Verify ownership via Trigger metadata
+	if (currentMeta.userId !== userId) {
+		throw new Error("Forbidden");
 	}
+
+	await runs.cancel(runId);
+
+	const deadline = Date.now() + 15_000;
+	while (Date.now() < deadline) {
+		const latest = await runs.retrieve(runId);
+		if (TERMINAL_TRIGGER_STATUSES.has(latest.status)) {
+			return;
+		}
+
+		await sleep(500);
+	}
+
+	throw new Error("Timed out waiting for Trigger.dev run to stop");
+}
+
+function sleep(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
 }
