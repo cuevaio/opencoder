@@ -1,6 +1,6 @@
 import { useLiveQuery } from "@tanstack/react-db";
 import { useQuery } from "@tanstack/react-query";
-import { PanelLeftOpen } from "lucide-react";
+import { PanelLeftOpen, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAutoScroll } from "#/hooks/use-auto-scroll";
 import { useProviderKeyStatus } from "#/hooks/use-provider-keys.ts";
@@ -28,6 +28,7 @@ import { useChatLayoutContext } from "#/routes/_authed/chat.tsx";
 import { Button } from "../ui/button.tsx";
 import { ChatFooter } from "./ChatFooter";
 import { ChatMobileMenu } from "./ChatMobileMenu";
+import { DeleteSessionDialog } from "./DeleteSessionDialog.tsx";
 import { SessionTodoDock } from "./SessionTodoDock";
 import { SessionTurn } from "./SessionTurn";
 
@@ -44,8 +45,10 @@ interface ChatViewProps {
 		variant: string,
 		imageUrls: Array<{ url: string; mime: string; filename?: string }>,
 	) => void;
+	onDeleteSession: () => void;
 	onRetrySync: () => void;
 	isSubmitting: boolean;
+	isDeleting?: boolean;
 	error: string | null;
 }
 
@@ -53,8 +56,10 @@ export function ChatView({
 	sessionId,
 	onNewSession,
 	onFollowup,
+	onDeleteSession,
 	onRetrySync,
 	isSubmitting,
+	isDeleting = false,
 	error,
 }: ChatViewProps) {
 	const scrollRef = useRef<HTMLDivElement>(null);
@@ -71,6 +76,7 @@ export function ChatView({
 	const [modeOverride, setModeOverride] = useState<"plan" | "build" | null>(
 		null,
 	);
+	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
 	const {
 		data: sessionDetail,
@@ -471,6 +477,14 @@ export function ChatView({
 					)}
 				</div>
 				<div className="flex shrink-0 items-center gap-1">
+					<button
+						type="button"
+						onClick={() => setDeleteDialogOpen(true)}
+						className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground press-scale"
+						aria-label="Delete session"
+					>
+						<Trash2 className="h-4 w-4" />
+					</button>
 					<ChatMobileMenu />
 				</div>
 			</div>
@@ -550,6 +564,13 @@ export function ChatView({
 					)}
 				</div>
 			</div>
+
+			<DeleteSessionDialog
+				open={deleteDialogOpen}
+				onOpenChange={setDeleteDialogOpen}
+				onConfirm={onDeleteSession}
+				isDeleting={isDeleting}
+			/>
 		</div>
 	);
 }
