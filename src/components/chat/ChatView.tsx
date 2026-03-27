@@ -22,6 +22,7 @@ import {
 	dbRowsToStreamEvents,
 	type SessionEventRow,
 } from "#/lib/session-converter";
+import { resolveSessionEventSource } from "#/lib/session-event-source.ts";
 import { extractLatestTodoProgress } from "#/lib/todo-state.ts";
 import { useChatLayoutContext } from "#/routes/_authed/chat.tsx";
 import { Button } from "../ui/button.tsx";
@@ -75,17 +76,22 @@ export function ChatView({
 		data: sessionDetail,
 		isLoading: isSessionLoading,
 		isFetched: hasSessionFetched,
+		isFetchedAfterMount: hasSessionFetchedAfterMount,
 	} = useQuery({
 		...sessionQueryOptions(sessionId),
 		refetchInterval: (query) =>
 			query.state.data?.status === "running" ? 3_000 : 30_000,
+		refetchOnMount: "always",
 		refetchOnWindowFocus: true,
 	});
 
 	const effectiveSessionRow = sessionDetail ?? null;
-	const sessionStatus = sessionDetail?.status ?? "running";
-	const useElectricEvents = sessionStatus === "running";
-	const useNeonEvents = !useElectricEvents || Boolean(electricSyncError);
+	const sessionStatus = sessionDetail?.status;
+	const { useElectricEvents, useNeonEvents } = resolveSessionEventSource({
+		sessionStatus,
+		electricSyncError,
+		hasFreshSessionStatus: hasSessionFetchedAfterMount,
+	});
 
 	const { data: neonEventRows = [] } = useQuery({
 		...sessionEventsQueryOptions(sessionId),
@@ -175,8 +181,11 @@ export function ChatView({
 	const initialPromptImages = useMemo(() => {
 		const firstUserMessage = eventRows.find(
 			(row) =>
-				(row as Record<string, unknown>).event_type === "user-message" &&
-				Array.isArray((row as Record<string, unknown>).user_message_images),
+				(row as unknown as Record<string, unknown>).event_type ===
+					"user-message" &&
+				Array.isArray(
+					(row as unknown as Record<string, unknown>).user_message_images,
+				),
 		) as Record<string, unknown> | undefined;
 		if (!firstUserMessage) {
 			return undefined;
@@ -375,6 +384,10 @@ export function ChatView({
 				</div>
 			</div>
 		);
+	}
+
+	if (!effectiveSessionRow) {
+		return null;
 	}
 
 	// ─── Render ───────────────────────────────────────────────
