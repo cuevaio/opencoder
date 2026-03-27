@@ -480,7 +480,7 @@ export function ChatView({
 					<button
 						type="button"
 						onClick={() => setDeleteDialogOpen(true)}
-						className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground press-scale"
+						className="flex h-8 w-8 items-center justify-center rounded-md border border-border/70 bg-background/70 text-muted-foreground hover:bg-muted hover:text-foreground press-scale"
 						aria-label="Delete session"
 					>
 						<Trash2 className="h-4 w-4" />
