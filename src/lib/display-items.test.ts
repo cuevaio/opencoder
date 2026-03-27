@@ -204,6 +204,67 @@ describe("buildDisplayItems", () => {
 		const toolMap = buildToolMap(events, "root-s1");
 		expect(toolMap.get("task-call-1")?.childReasoning).toBe("child thinks");
 	});
+
+	it("updates repeated deltas for the same part without duplicating blocks", () => {
+		const events: StreamEvent[] = [
+			{
+				type: "part-update",
+				messageId: "m1",
+				part: {
+					id: "text-1",
+					sessionID: "s1",
+					messageID: "m1",
+					type: "text",
+					text: "Hel",
+				},
+				delta: "Hel",
+			},
+			{
+				type: "part-update",
+				messageId: "m1",
+				part: {
+					id: "reason-1",
+					sessionID: "s1",
+					messageID: "m1",
+					type: "reasoning",
+					text: "thin",
+					time: { start: 1 },
+				},
+				delta: "thin",
+			},
+			{
+				type: "part-update",
+				messageId: "m1",
+				part: {
+					id: "text-1",
+					sessionID: "s1",
+					messageID: "m1",
+					type: "text",
+					text: "Hello",
+				},
+				delta: "lo",
+			},
+			{
+				type: "part-update",
+				messageId: "m1",
+				part: {
+					id: "reason-1",
+					sessionID: "s1",
+					messageID: "m1",
+					type: "reasoning",
+					text: "thinking",
+					time: { start: 1 },
+				},
+				delta: "king",
+			},
+		];
+
+		const items = buildDisplayItems(events, new Map());
+		expect(items).toEqual([
+			{ type: "text-block", text: "Hello", partId: "text-1" },
+			{ type: "reasoning-block", text: "thinking", partId: "reason-1" },
+		]);
+	});
 });
 
 describe("hasRoundCompleteInCurrentTurn", () => {

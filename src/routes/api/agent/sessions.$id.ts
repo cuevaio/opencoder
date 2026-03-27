@@ -7,7 +7,8 @@ import { requireAuth } from "#/lib/auth-helpers.ts";
 
 /**
  * GET /api/agent/sessions/:id
- * Get a single session with full sessionData for replay.
+ * Get a single session summary row.
+ * Pass `include_session_data=true` to include the sessionData replay blob.
  *
  * DELETE /api/agent/sessions/:id
  * Delete a session and all related data (events, git state cascade).
@@ -19,6 +20,7 @@ export const Route = createFileRoute("/api/agent/sessions/$id")({
 			GET: async ({ request }) => {
 				const authSession = await requireAuth(request);
 				const userId = authSession.user.id;
+				const url = new URL(request.url);
 
 				const sessionId = parseSessionId(request);
 				if (sessionId === null) {
@@ -28,11 +30,49 @@ export const Route = createFileRoute("/api/agent/sessions/$id")({
 					);
 				}
 
-				const [row] = await db
-					.select()
-					.from(sessions)
-					.where(and(eq(sessions.id, sessionId), eq(sessions.userId, userId)))
-					.limit(1);
+				const includeSessionData =
+					url.searchParams.get("include_session_data") === "true";
+
+				const baseSelection = {
+					id: sessions.id,
+					repoUrl: sessions.repoUrl,
+					repoFullName: sessions.repoFullName,
+					opencodeSessionId: sessions.opencodeSessionId,
+					triggerRunId: sessions.triggerRunId,
+					title: sessions.title,
+					initialPrompt: sessions.initialPrompt,
+					lastPrompt: sessions.lastPrompt,
+					mode: sessions.mode,
+					selectedModel: sessions.selectedModel,
+					selectedVariant: sessions.selectedVariant,
+					status: sessions.status,
+					totalTokens: sessions.totalTokens,
+					totalCost: sessions.totalCost,
+					messageCount: sessions.messageCount,
+					toolCallCount: sessions.toolCallCount,
+					eventSeq: sessions.eventSeq,
+					createdAt: sessions.createdAt,
+					completedAt: sessions.completedAt,
+				};
+
+				const [row] = includeSessionData
+					? await db
+							.select({
+								...baseSelection,
+								sessionData: sessions.sessionData,
+							})
+							.from(sessions)
+							.where(
+								and(eq(sessions.id, sessionId), eq(sessions.userId, userId)),
+							)
+							.limit(1)
+					: await db
+							.select(baseSelection)
+							.from(sessions)
+							.where(
+								and(eq(sessions.id, sessionId), eq(sessions.userId, userId)),
+							)
+							.limit(1);
 
 				if (!row) {
 					return Response.json({ error: "Session not found" }, { status: 404 });

@@ -82,8 +82,7 @@ export const Route = createFileRoute("/api/shapes/session-events")({
 				shapeUrl.searchParams.set("where", "session_id = $1");
 				shapeUrl.searchParams.set("params[1]", String(session.id));
 				// Keep payload light for live display.
-				// We include part_data as a fallback for reasoning reconstruction,
-				// while still excluding tool_input/tool_metadata.
+				// Heavy tool fields are lazy-loaded from REST when a tool card expands.
 				shapeUrl.searchParams.set(
 					"columns",
 					[
@@ -99,7 +98,6 @@ export const Route = createFileRoute("/api/shapes/session-events")({
 						"tool_name",
 						"call_id",
 						"tool_status",
-						"tool_output",
 						"tool_error",
 						"tool_title",
 						"tool_time_start",
@@ -115,7 +113,6 @@ export const Route = createFileRoute("/api/shapes/session-events")({
 						"message_cost",
 						"user_message_text",
 						"user_message_images",
-						"part_data",
 						"created_at",
 						"updated_at",
 					].join(","),

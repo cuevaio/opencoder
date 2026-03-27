@@ -88,6 +88,7 @@ export function buildToolMap(
 
 	if (shouldFilterChildSessions) {
 		const taskToolCallIds: string[] = [];
+		const seenTaskToolCallIds = new Set<string>();
 		const childSessionIds: string[] = [];
 		const seenChildSessions = new Set<string>();
 
@@ -101,7 +102,8 @@ export function buildToolMap(
 				part.tool === "task" &&
 				part.sessionID === effectiveRootSessionId
 			) {
-				if (!taskToolCallIds.includes(part.callID)) {
+				if (!seenTaskToolCallIds.has(part.callID)) {
+					seenTaskToolCallIds.add(part.callID);
 					taskToolCallIds.push(part.callID);
 				}
 			}
@@ -189,8 +191,7 @@ export function buildDisplayItems(
 
 	const items: DisplayItem[] = [];
 	const seenToolCallIds = new Set<string>();
-	// Track latest text/reasoning part IDs to avoid duplicate text blocks
-	const seenPartIds = new Set<string>();
+	const partIdToDisplayIndex = new Map<string, number>();
 
 	const discovery = rootSessionId
 		? { rootSessionId, confident: true }
@@ -214,33 +215,26 @@ export function buildDisplayItems(
 				}
 
 				if (part.type === "text") {
-					if (seenPartIds.has(part.id)) {
-						// Update existing text block with delta or full text
-						const existing = findLastDisplayItemByPartId(items, part.id);
+					const existingIndex = partIdToDisplayIndex.get(part.id);
+					if (typeof existingIndex === "number") {
+						const existing = items[existingIndex];
 						if (existing && existing.type === "text-block") {
-							if (delta) {
-								existing.text += delta;
-							} else {
-								existing.text = part.text;
-							}
+							existing.text = delta ? existing.text + delta : part.text;
 						}
 					} else {
-						seenPartIds.add(part.id);
 						items.push({
 							type: "text-block",
 							text: delta || part.text,
 							partId: part.id,
 						});
+						partIdToDisplayIndex.set(part.id, items.length - 1);
 					}
 				} else if (part.type === "reasoning") {
-					if (seenPartIds.has(part.id)) {
-						const existing = findLastDisplayItemByPartId(items, part.id);
+					const existingIndex = partIdToDisplayIndex.get(part.id);
+					if (typeof existingIndex === "number") {
+						const existing = items[existingIndex];
 						if (existing && existing.type === "reasoning-block") {
-							if (delta) {
-								existing.text += delta;
-							} else {
-								existing.text = part.text;
-							}
+							existing.text = delta ? existing.text + delta : part.text;
 						}
 					} else {
 						const text = delta || part.text;
@@ -248,12 +242,12 @@ export function buildDisplayItems(
 							break;
 						}
 
-						seenPartIds.add(part.id);
 						items.push({
 							type: "reasoning-block",
 							text,
 							partId: part.id,
 						});
+						partIdToDisplayIndex.set(part.id, items.length - 1);
 					}
 				} else if (part.type === "tool" && part.state.status !== "pending") {
 					if (!seenToolCallIds.has(part.callID)) {
@@ -478,21 +472,4 @@ function discoverRootSessionId(events: StreamEvent[]): RootSessionDiscovery {
 	}
 
 	return { confident: false };
-}
-
-function findLastDisplayItemByPartId(
-	items: DisplayItem[],
-	partId: string,
-): (DisplayItem & { type: "text-block" | "reasoning-block" }) | undefined {
-	for (let i = items.length - 1; i >= 0; i--) {
-		const item = items[i];
-		if (
-			item &&
-			(item.type === "text-block" || item.type === "reasoning-block") &&
-			item.partId === partId
-		) {
-			return item;
-		}
-	}
-	return undefined;
 }

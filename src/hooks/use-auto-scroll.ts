@@ -13,8 +13,13 @@ export function useAutoScroll(
 	scrollRef: RefObject<HTMLDivElement | null>,
 	bottomRef: RefObject<HTMLDivElement | null>,
 	trigger: unknown,
+	options?: {
+		suppress?: boolean;
+		behavior?: ScrollBehavior;
+	},
 ): void {
 	const isNearBottom = useRef(true);
+	const lastScrollAt = useRef(0);
 	const triggerRef = useRef(trigger);
 	triggerRef.current = trigger;
 
@@ -36,8 +41,18 @@ export function useAutoScroll(
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: trigger is intentionally used to re-run scroll on data changes
 	useEffect(() => {
-		if (isNearBottom.current && bottomRef.current) {
-			bottomRef.current.scrollIntoView({ behavior: "smooth" });
+		if (options?.suppress) {
+			return;
 		}
-	}, [bottomRef, trigger]);
+
+		if (isNearBottom.current && bottomRef.current) {
+			const now = Date.now();
+			const isFrequentUpdate = now - lastScrollAt.current < 250;
+			lastScrollAt.current = now;
+			const behavior = options?.behavior;
+			bottomRef.current.scrollIntoView({
+				behavior: behavior ?? (isFrequentUpdate ? "auto" : "smooth"),
+			});
+		}
+	}, [bottomRef, options?.behavior, options?.suppress, trigger]);
 }

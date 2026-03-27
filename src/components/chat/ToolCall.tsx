@@ -1,6 +1,8 @@
+import { useQuery } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { memo, useMemo, useState } from "react";
 import type { ToolState } from "#/lib/display-items";
+import { sessionEventDetailQueryOptions } from "#/lib/queries.ts";
 import { extractTodosFromTool, parseTodoProgress } from "#/lib/todo-state.ts";
 import { getToolInfo } from "#/lib/tool-info";
 import { cn } from "#/lib/utils.ts";
@@ -8,6 +10,7 @@ import { TodoList } from "./TodoList";
 
 interface ToolCallProps {
 	tool: ToolState;
+	sessionId: number;
 }
 
 function StatusIndicator({ status }: { status: ToolState["status"] }) {
@@ -52,18 +55,40 @@ function TodoWriteToolCall({ tool }: ToolCallProps) {
 	);
 }
 
-export function ToolCall({ tool }: ToolCallProps) {
+export const ToolCall = memo(function ToolCall({
+	tool,
+	sessionId,
+}: ToolCallProps) {
 	if (tool.tool === "todowrite" && extractTodosFromTool(tool)) {
-		return <TodoWriteToolCall tool={tool} />;
+		return <TodoWriteToolCall tool={tool} sessionId={sessionId} />;
 	}
-	return <GenericToolCall tool={tool} />;
-}
+	return <GenericToolCall tool={tool} sessionId={sessionId} />;
+});
 
-function GenericToolCall({ tool }: ToolCallProps) {
+function GenericToolCall({ tool, sessionId }: ToolCallProps) {
 	const [expanded, setExpanded] = useState(false);
 	const info = getToolInfo(tool.tool, tool.input);
+	const { data: heavyEvent, isLoading: isHeavyLoading } = useQuery({
+		...sessionEventDetailQueryOptions(sessionId, tool.partId),
+		enabled: expanded,
+	});
+	const effectiveInput =
+		heavyEvent?.tool_input && typeof heavyEvent.tool_input === "object"
+			? (heavyEvent.tool_input as Record<string, unknown>)
+			: tool.input;
+	const effectiveOutput = heavyEvent?.tool_output ?? tool.output;
+	const inputJson = useMemo(() => {
+		if (
+			!expanded ||
+			!effectiveInput ||
+			Object.keys(effectiveInput).length === 0
+		) {
+			return null;
+		}
+		return JSON.stringify(effectiveInput, null, 2);
+	}, [expanded, effectiveInput]);
 
-	const hasOutput = tool.output && tool.output.length > 0;
+	const hasOutput = effectiveOutput && effectiveOutput.length > 0;
 	const hasChildTools = tool.childTools && tool.childTools.size > 0;
 	const hasChildText = tool.childText && tool.childText.length > 0;
 	const hasChildReasoning = !!tool.childReasoning?.trim();
@@ -97,85 +122,85 @@ function GenericToolCall({ tool }: ToolCallProps) {
 				/>
 			</button>
 
-			{/* Smooth expand/collapse using CSS grid-rows trick */}
-			<div
-				className={cn(
-					"grid transition-[grid-template-rows] duration-200 ease-out",
-					expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-				)}
-			>
-				<div className="overflow-hidden">
-					<div className="space-y-2 border-t border-border/80 px-3 py-2.5">
-						{tool.input && Object.keys(tool.input).length > 0 && (
-							<div>
-								<div className="mb-1 font-medium text-muted-foreground">
-									Input
-								</div>
-								<pre className="max-h-60 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-background p-2 font-mono text-xs sm:max-h-40 sm:text-[11px]">
-									{JSON.stringify(tool.input, null, 2)}
-								</pre>
+			{expanded && (
+				<div className="space-y-2 border-t border-border/80 px-3 py-2.5">
+					{inputJson && (
+						<div>
+							<div className="mb-1 font-medium text-muted-foreground">
+								Input
 							</div>
-						)}
+							<pre className="max-h-60 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-background p-2 font-mono text-xs sm:max-h-40 sm:text-[11px]">
+								{inputJson}
+							</pre>
+						</div>
+					)}
 
-						{hasOutput && (
-							<div>
-								<div className="mb-1 font-medium text-muted-foreground">
-									Output
-								</div>
-								<pre className="max-h-60 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-background p-2 font-mono text-xs sm:max-h-40 sm:text-[11px]">
-									{tool.output}
-								</pre>
+					{hasOutput && (
+						<div>
+							<div className="mb-1 font-medium text-muted-foreground">
+								Output
 							</div>
-						)}
+							<pre className="max-h-60 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-background p-2 font-mono text-xs sm:max-h-40 sm:text-[11px]">
+								{effectiveOutput}
+							</pre>
+						</div>
+					)}
 
-						{tool.error && (
-							<div>
-								<div className="mb-1 font-medium text-red-600 dark:text-red-400">
-									Error
-								</div>
-								<pre className="max-h-60 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-red-50 p-2 font-mono text-xs dark:bg-red-950 sm:max-h-40 sm:text-[11px]">
-									{tool.error}
-								</pre>
-							</div>
-						)}
+					{isHeavyLoading && !inputJson && !hasOutput && (
+						<div className="text-[11px] text-muted-foreground">
+							Loading tool details...
+						</div>
+					)}
 
-						{hasChildText && (
-							<div>
-								<div className="mb-1 font-medium text-muted-foreground">
-									Subagent response
-								</div>
-								<div className="max-h-60 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-background p-2 text-xs sm:max-h-40 sm:text-[11px]">
-									{tool.childText}
-								</div>
+					{tool.error && (
+						<div>
+							<div className="mb-1 font-medium text-red-600 dark:text-red-400">
+								Error
 							</div>
-						)}
+							<pre className="max-h-60 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-red-50 p-2 font-mono text-xs dark:bg-red-950 sm:max-h-40 sm:text-[11px]">
+								{tool.error}
+							</pre>
+						</div>
+					)}
 
-						{hasChildReasoning && (
-							<div>
-								<div className="mb-1 font-medium text-muted-foreground">
-									Subagent thinking
-								</div>
-								<div className="max-h-60 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-border/70 bg-surface-2 p-2 text-xs text-muted-foreground sm:max-h-40 sm:text-[11px]">
-									{tool.childReasoning}
-								</div>
+					{hasChildText && (
+						<div>
+							<div className="mb-1 font-medium text-muted-foreground">
+								Subagent response
 							</div>
-						)}
+							<div className="max-h-60 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-background p-2 text-xs sm:max-h-40 sm:text-[11px]">
+								{tool.childText}
+							</div>
+						</div>
+					)}
 
-						{hasChildTools && (
-							<div className="space-y-1">
-								<div className="font-medium text-muted-foreground">
-									Subagent tools
-								</div>
-								{Array.from(tool.childTools?.values() ?? []).map(
-									(childTool) => (
-										<ToolCall key={childTool.id} tool={childTool} />
-									),
-								)}
+					{hasChildReasoning && (
+						<div>
+							<div className="mb-1 font-medium text-muted-foreground">
+								Subagent thinking
 							</div>
-						)}
-					</div>
+							<div className="max-h-60 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-border/70 bg-surface-2 p-2 text-xs text-muted-foreground sm:max-h-40 sm:text-[11px]">
+								{tool.childReasoning}
+							</div>
+						</div>
+					)}
+
+					{hasChildTools && (
+						<div className="space-y-1">
+							<div className="font-medium text-muted-foreground">
+								Subagent tools
+							</div>
+							{Array.from(tool.childTools?.values() ?? []).map((childTool) => (
+								<ToolCall
+									key={childTool.id}
+									tool={childTool}
+									sessionId={sessionId}
+								/>
+							))}
+						</div>
+					)}
 				</div>
-			</div>
+			)}
 		</div>
 	);
 }

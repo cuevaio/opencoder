@@ -1,5 +1,5 @@
 import type { FormEvent as ReactFormEvent, ReactNode } from "react";
-import { useCallback, useState } from "react";
+import { memo, useCallback, useState } from "react";
 import type { DisplayItem, Turn } from "#/lib/display-items";
 import { Dialog, DialogContent } from "../ui/dialog";
 import { MarkdownRenderer } from "./MarkdownRenderer";
@@ -7,6 +7,7 @@ import { QuestionForm } from "./QuestionForm";
 import { ToolCall } from "./ToolCall";
 
 interface SessionTurnProps {
+	sessionId: number;
 	turn: Turn;
 	pendingQuestion: (DisplayItem & { type: "question-asked" }) | null;
 	completedTokens: Set<string>;
@@ -14,7 +15,8 @@ interface SessionTurnProps {
 	bottomAction?: ReactNode;
 }
 
-export function SessionTurn({
+export const SessionTurn = memo(function SessionTurn({
+	sessionId,
 	turn,
 	pendingQuestion,
 	completedTokens,
@@ -54,6 +56,7 @@ export function SessionTurn({
 			{turn.items.map((item, i) => (
 				<TurnItem
 					key={`item-${i.toString()}`}
+					sessionId={sessionId}
 					item={item}
 					pendingQuestion={pendingQuestion}
 					completedTokens={completedTokens}
@@ -64,14 +67,16 @@ export function SessionTurn({
 			{bottomAction ? <div className="pt-1">{bottomAction}</div> : null}
 		</div>
 	);
-}
+});
 
 function TurnItem({
+	sessionId,
 	item,
 	pendingQuestion,
 	completedTokens,
 	onAnswer,
 }: {
+	sessionId: number;
 	item: DisplayItem;
 	pendingQuestion: (DisplayItem & { type: "question-asked" }) | null;
 	completedTokens: Set<string>;
@@ -99,7 +104,7 @@ function TurnItem({
 			);
 
 		case "tool-call":
-			return <ToolCall tool={item.tool} />;
+			return <ToolCall tool={item.tool} sessionId={sessionId} />;
 
 		case "status":
 			return <div className="text-xs text-muted-foreground">{item.status}</div>;

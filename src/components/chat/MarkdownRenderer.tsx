@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import type { MouseEvent as ReactMouseEvent } from "react";
-import { useCallback, useMemo } from "react";
+import { memo, useCallback, useMemo } from "react";
 import type { Components } from "react-markdown";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
@@ -14,7 +14,9 @@ interface MarkdownRendererProps {
 	content: string;
 }
 
-export function MarkdownRenderer({ content }: MarkdownRendererProps) {
+export const MarkdownRenderer = memo(function MarkdownRenderer({
+	content,
+}: MarkdownRendererProps) {
 	const navigate = useNavigate();
 
 	const handleAnchorClick = useCallback(
@@ -81,4 +83,4 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 			</ReactMarkdown>
 		</div>
 	);
-}
+});

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
 	dbRowsToStreamEvents,
+	dbRowsToStreamEventsWithOptions,
 	type SessionEventRow,
 } from "#/lib/session-converter";
 
@@ -68,5 +69,30 @@ describe("dbRowsToStreamEvents", () => {
 				time: { start: 99 },
 			},
 		});
+	});
+
+	it("can keep first user-message for windowed chunks", () => {
+		const rows: SessionEventRow[] = [
+			{
+				id: 1,
+				session_id: 123,
+				seq: 1,
+				event_type: "user-message",
+				user_message_text: "windowed prompt",
+			},
+		];
+
+		const events = dbRowsToStreamEventsWithOptions(rows, {
+			skipFirstUserMessage: false,
+		});
+		expect(events).toEqual([
+			{
+				type: "user-message",
+				text: "windowed prompt",
+				images: undefined,
+			},
+		]);
+
+		expect(dbRowsToStreamEvents(rows)).toEqual([]);
 	});
 });
