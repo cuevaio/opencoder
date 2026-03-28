@@ -27,6 +27,7 @@ import {
 import { fetchGitHubIdentity } from "./lib/github-identity";
 import {
 	authenticateOpenCode,
+	refreshOAuthTokenIfNeeded,
 	startOpenCodeServer,
 } from "./lib/opencode-server";
 import { exportAndPersistSession } from "./lib/session-export";
@@ -134,6 +135,16 @@ export const runSession = schemaTask({
 			authorEmail: gitUser.email,
 		});
 
+		// ── Step 0: Resolve model credentials ──
+		const modelExecution = await resolveModelExecution(
+			payload.userId,
+			payload.model,
+		);
+
+		// Best-effort token refresh so OpenCode gets a fresh access token.
+		// Errors here are non-fatal — OpenCode refreshes internally too.
+		await refreshOAuthTokenIfNeeded(modelExecution.auth);
+
 		let tmpDir: string | undefined;
 		try {
 			// ── Step 1: Clone repo ──
@@ -173,11 +184,6 @@ export const runSession = schemaTask({
 				await dbWriter.writeStatus("Starting AI agent...");
 			}
 
-			const modelExecution = await resolveModelExecution(
-				payload.userId,
-				payload.model,
-			);
-
 			const { client, server } = await startOpenCodeServer(
 				clone.cloneDir,
 				abortController.signal,
@@ -190,7 +196,7 @@ export const runSession = schemaTask({
 				await authenticateOpenCode(
 					client,
 					modelExecution.providerID,
-					modelExecution.apiKey,
+					modelExecution.auth,
 				);
 				metadata.set("status", "agent-ready");
 
@@ -211,10 +217,10 @@ export const runSession = schemaTask({
 					);
 					logger.info("Imported previous session", { sessionId });
 				} else {
-				// Create a fresh session — no title so OpenCode uses its default
-				// "New session - <ISO timestamp>" format, which triggers ensureTitle()
-				// to generate an AI-summarized title from the first user message.
-				const sessionResult = await client.session.create({});
+					// Create a fresh session — no title so OpenCode uses its default
+					// "New session - <ISO timestamp>" format, which triggers ensureTitle()
+					// to generate an AI-summarized title from the first user message.
+					const sessionResult = await client.session.create({});
 					const newId = sessionResult.data?.id;
 					if (!newId) {
 						throw new Error("Failed to create OpenCode session");
@@ -290,6 +296,39 @@ export const runSession = schemaTask({
 						break;
 					}
 					if (loopOutcome === "resubscribe") continue;
+
+					// Provider error (usage limit, auth rejection) — stop cleanly.
+					// Write the error as a visible event, mark session idle with the
+					// message stored, and return successfully so Trigger doesn't retry.
+					if (
+						typeof loopOutcome === "object" &&
+						loopOutcome.outcome === "provider-error"
+					) {
+						await dbWriter.writeError(
+							loopOutcome.errorName,
+							loopOutcome.message,
+						);
+						await dbWriter.close();
+						const finalSeq = dbWriter.getFinalSeq();
+						await db
+							.update(sessions)
+							.set({
+								status: "idle",
+								lastError: loopOutcome.message,
+								completedAt: new Date(),
+								eventSeq: finalSeq,
+							})
+							.where(eq(sessions.id, dbSessionId));
+						metadata.set("status", "idle");
+						logger.info("Session stopped due to provider error", {
+							errorName: loopOutcome.errorName,
+							message: loopOutcome.message,
+						});
+						return {
+							status: "idle" as const,
+							toolCallCount: toolCalls.length,
+						};
+					}
 
 					// outcome === "idle" → round complete
 					break;

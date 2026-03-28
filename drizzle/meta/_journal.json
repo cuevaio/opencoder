@@ -43,6 +43,20 @@
       "when": 1774536767435,
       "tag": "0005_lean_vector",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1774719502940,
+      "tag": "0006_openai-oauth",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1774722703213,
+      "tag": "0007_session-last-error",
+      "breakpoints": true
     }
   ]
 }

@@ -6,6 +6,10 @@ interface ProviderKeyStatus {
 	configured: boolean;
 }
 
+interface OpenAIOAuthStatus {
+	connected: boolean;
+}
+
 export function useProviderKeyStatus(): {
 	configuredKeys: Set<KeyProviderId>;
 	loading: boolean;
@@ -18,16 +22,28 @@ export function useProviderKeyStatus(): {
 	useEffect(() => {
 		let cancelled = false;
 
-		fetch("/api/agent/keys")
-			.then((res) => res.json())
-			.then((data: { keys?: ProviderKeyStatus[] }) => {
-				if (cancelled) return;
-				const set = new Set<KeyProviderId>();
-				for (const k of data.keys ?? []) {
-					if (k.configured) set.add(k.provider);
-				}
-				setConfiguredKeys(set);
-			})
+		Promise.all([
+			fetch("/api/agent/keys").then((res) => res.json()),
+			fetch("/api/agent/oauth/openai/status").then((res) =>
+				res.ok ? res.json() : ({ connected: false } as OpenAIOAuthStatus),
+			),
+		])
+			.then(
+				([keysData, oauthData]: [
+					{ keys?: ProviderKeyStatus[] },
+					OpenAIOAuthStatus,
+				]) => {
+					if (cancelled) return;
+					const set = new Set<KeyProviderId>();
+					for (const k of keysData.keys ?? []) {
+						if (k.configured) set.add(k.provider);
+					}
+					if (oauthData.connected) {
+						set.add("openai");
+					}
+					setConfiguredKeys(set);
+				},
+			)
 			.catch(() => {
 				// silently fail — caller can still select models
 			})

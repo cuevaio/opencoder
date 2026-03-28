@@ -297,6 +297,25 @@ export class SessionDbWriter {
 		}
 	}
 
+	/** Write a provider error event (usage limit, auth rejection, quota). */
+	async writeError(errorName: string, message: string): Promise<void> {
+		try {
+			await this.flushDirtyText();
+			const seq = this.nextSeq();
+			await db.insert(sessionEvents).values({
+				sessionId: this.sessionId,
+				userId: this.userId,
+				seq,
+				eventType: "session-error",
+				statusText: `${errorName}: ${message}`,
+			});
+		} catch (error) {
+			logger.error("Failed to write session-error event", {
+				error: error instanceof Error ? error.message : String(error),
+			});
+		}
+	}
+
 	/** Write an aborted event. */
 	async writeAborted(): Promise<void> {
 		try {

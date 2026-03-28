@@ -8,6 +8,7 @@ import {
 } from "#/lib/server/encryption.ts";
 import type { KeyProviderId } from "./model-registry.ts";
 import { getModelOption } from "./model-registry.ts";
+import { getOpenAIOAuthAuth, hasOpenAIOAuth } from "./provider-oauth.ts";
 
 interface ProviderKeyRow {
 	provider: KeyProviderId;
@@ -31,7 +32,16 @@ export interface ResolvedModelExecution {
 	providerID: KeyProviderId;
 	modelID: string;
 	fullModel: string;
-	apiKey: string;
+	auth:
+		| { type: "api"; key: string }
+		| {
+				type: "oauth";
+				refresh: string;
+				access: string;
+				expires: number;
+				accountId?: string;
+				enterpriseUrl?: string;
+		  };
 }
 
 export async function getProviderKeyMapForUser(
@@ -136,11 +146,13 @@ export async function canExecuteModel(
 	}
 
 	const keyMap = await getProviderKeyMapForUser(userId);
+	const hasOpenAIOauth = await hasOpenAIOAuth(userId);
 	if (model.family === "openai") {
-		if (keyMap.openai || keyMap.vercel) return { ok: true };
+		if (hasOpenAIOauth || keyMap.openai || keyMap.vercel) return { ok: true };
 		return {
 			ok: false,
-			message: "This model needs an OpenAI API key or an AI Gateway API key.",
+			message:
+				"This model needs an OpenAI subscription connection, OpenAI API key, or AI Gateway API key.",
 		};
 	}
 
@@ -163,16 +175,29 @@ export async function resolveModelExecution(
 	const keyMap = await getProviderKeyMapForUser(userId);
 
 	if (model.family === "openai") {
+		const oauth = await getOpenAIOAuthAuth(userId);
+		if (oauth) {
+			return {
+				providerID: "openai",
+				modelID: model.id,
+				fullModel: `openai/${model.id}`,
+				auth: oauth,
+			};
+		}
+
 		if (keyMap.openai) {
 			return {
 				providerID: "openai",
 				modelID: model.id,
 				fullModel: `openai/${model.id}`,
-				apiKey: decryptSecret({
-					ciphertext: keyMap.openai.encryptedKey,
-					iv: keyMap.openai.iv,
-					authTag: keyMap.openai.authTag,
-				}),
+				auth: {
+					type: "api",
+					key: decryptSecret({
+						ciphertext: keyMap.openai.encryptedKey,
+						iv: keyMap.openai.iv,
+						authTag: keyMap.openai.authTag,
+					}),
+				},
 			};
 		}
 
@@ -181,16 +206,19 @@ export async function resolveModelExecution(
 				providerID: "vercel",
 				modelID: `openai/${model.id}`,
 				fullModel: `vercel/openai/${model.id}`,
-				apiKey: decryptSecret({
-					ciphertext: keyMap.vercel.encryptedKey,
-					iv: keyMap.vercel.iv,
-					authTag: keyMap.vercel.authTag,
-				}),
+				auth: {
+					type: "api",
+					key: decryptSecret({
+						ciphertext: keyMap.vercel.encryptedKey,
+						iv: keyMap.vercel.iv,
+						authTag: keyMap.vercel.authTag,
+					}),
+				},
 			};
 		}
 
 		throw new Error(
-			"No compatible API key found. Add an OpenAI or AI Gateway key in Dashboard.",
+			"No compatible credential found. Connect OpenAI subscription or add an OpenAI/AI Gateway key in Dashboard.",
 		);
 	}
 
@@ -199,11 +227,14 @@ export async function resolveModelExecution(
 			providerID: "anthropic",
 			modelID: model.id,
 			fullModel: `anthropic/${model.id}`,
-			apiKey: decryptSecret({
-				ciphertext: keyMap.anthropic.encryptedKey,
-				iv: keyMap.anthropic.iv,
-				authTag: keyMap.anthropic.authTag,
-			}),
+			auth: {
+				type: "api",
+				key: decryptSecret({
+					ciphertext: keyMap.anthropic.encryptedKey,
+					iv: keyMap.anthropic.iv,
+					authTag: keyMap.anthropic.authTag,
+				}),
+			},
 		};
 	}
 
@@ -212,11 +243,14 @@ export async function resolveModelExecution(
 			providerID: "vercel",
 			modelID: `anthropic/${model.id}`,
 			fullModel: `vercel/anthropic/${model.id}`,
-			apiKey: decryptSecret({
-				ciphertext: keyMap.vercel.encryptedKey,
-				iv: keyMap.vercel.iv,
-				authTag: keyMap.vercel.authTag,
-			}),
+			auth: {
+				type: "api",
+				key: decryptSecret({
+					ciphertext: keyMap.vercel.encryptedKey,
+					iv: keyMap.vercel.iv,
+					authTag: keyMap.vercel.authTag,
+				}),
+			},
 		};
 	}
 

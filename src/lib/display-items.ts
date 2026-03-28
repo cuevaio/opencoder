@@ -44,7 +44,8 @@ export type DisplayItem =
 			text: string;
 			images?: Array<{ url: string; mime: string; filename?: string }>;
 	  }
-	| { type: "aborted" };
+	| { type: "aborted" }
+	| { type: "session-error"; message: string };
 
 export type Turn = {
 	prompt: string;
@@ -299,6 +300,10 @@ export function buildDisplayItems(
 
 			case "aborted":
 				items.push({ type: "aborted" });
+				break;
+
+			case "session-error":
+				items.push({ type: "session-error", message: event.message });
 				break;
 
 			case "message-update":

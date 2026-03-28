@@ -235,6 +235,18 @@ export function dbRowsToStreamEventsWithOptions(
 			case "aborted":
 				events.push({ type: "aborted" });
 				break;
+
+			case "session-error":
+				if (row.status_text) {
+					// status_text is stored as "ErrorName: message" — extract the message part
+					const colonIdx = row.status_text.indexOf(": ");
+					const message =
+						colonIdx !== -1
+							? row.status_text.slice(colonIdx + 2)
+							: row.status_text;
+					events.push({ type: "session-error", message });
+				}
+				break;
 		}
 	}
 

@@ -219,6 +219,7 @@ export const agentSessions = pgTable(
 		messageCount: integer("message_count"),
 		toolCallCount: integer("tool_call_count"),
 		eventSeq: integer("event_seq").notNull().default(0),
+		lastError: text("last_error"),
 		gitStateStatus: text("git_state_status").notNull().default("none"),
 		gitStateError: text("git_state_error"),
 		gitStateCapturedAt: timestamp("git_state_captured_at", {
@@ -293,6 +294,62 @@ export const agentProviderKeys = pgTable(
 			t.provider,
 		),
 		index("agent_provider_keys_user_id_idx").on(t.userId),
+	],
+);
+
+export const agentProviderOauthCredentials = pgTable(
+	"agent_provider_oauth_credentials",
+	{
+		id: integer().primaryKey().generatedAlwaysAsIdentity(),
+		userId: text("user_id").notNull(),
+		provider: text("provider").notNull(),
+		encryptedAuth: text("encrypted_auth").notNull(),
+		iv: text("iv").notNull(),
+		authTag: text("auth_tag").notNull(),
+		keyVersion: integer("key_version").notNull().default(1),
+		accountId: text("account_id"),
+		tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }),
+		lastError: text("last_error"),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(t) => [
+		uniqueIndex("agent_provider_oauth_credentials_user_provider_idx").on(
+			t.userId,
+			t.provider,
+		),
+		index("agent_provider_oauth_credentials_user_id_idx").on(t.userId),
+	],
+);
+
+export const agentProviderOauthPending = pgTable(
+	"agent_provider_oauth_pending",
+	{
+		id: text("id").primaryKey(),
+		userId: text("user_id").notNull(),
+		provider: text("provider").notNull(),
+		encryptedData: text("encrypted_data").notNull(),
+		iv: text("iv").notNull(),
+		authTag: text("auth_tag").notNull(),
+		keyVersion: integer("key_version").notNull().default(1),
+		expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+		consumedAt: timestamp("consumed_at", { withTimezone: true }),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(t) => [
+		index("agent_provider_oauth_pending_user_id_idx").on(t.userId),
+		index("agent_provider_oauth_pending_expires_at_idx").on(t.expiresAt),
 	],
 );
 
