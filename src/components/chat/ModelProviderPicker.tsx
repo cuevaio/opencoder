@@ -154,7 +154,7 @@ export function ModelProviderPicker({
 				<button
 					type="button"
 					disabled={disabled}
-					className="flex h-8 min-h-8 items-center gap-1 rounded-md border border-border bg-background/70 px-2 text-xs font-medium text-muted-foreground hover:bg-muted disabled:opacity-50"
+					className="flex h-10 min-h-10 items-center gap-1 rounded-md border border-border bg-background/70 px-2 text-sm font-medium text-muted-foreground hover:bg-muted disabled:opacity-50 sm:h-9 sm:min-h-9 sm:text-xs md:h-8 md:min-h-8 md:text-xs"
 					aria-label="Select model and provider"
 					aria-haspopup="listbox"
 					aria-expanded={open}
@@ -165,7 +165,7 @@ export function ModelProviderPicker({
 							<span className="text-muted-foreground/60">{buttonSuffix}</span>
 						)}
 					</span>
-					<ChevronDown className="size-3 opacity-60" />
+					<ChevronDown className="size-4 opacity-60 md:size-3" />
 				</button>
 			</PopoverTrigger>
 			<PopoverContent align="start" className="w-[min(92vw,22rem)] p-0">
