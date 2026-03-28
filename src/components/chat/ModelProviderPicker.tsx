@@ -175,7 +175,7 @@ export function ModelProviderPicker({
 				{step === "model" ? (
 					<ModelStep
 						currentModel={model}
-						currentProvider={provider}
+						currentProvider={effectiveProvider}
 						modelsByFamily={modelsByFamily}
 						configuredKeys={configuredKeys}
 						oauthConnected={oauthConnected}
@@ -185,7 +185,7 @@ export function ModelProviderPicker({
 				) : (
 					<ProviderStep
 						model={model}
-						currentProvider={provider}
+						currentProvider={effectiveProvider}
 						providerCandidates={providerCandidates}
 						onSelectProvider={handleSelectProvider}
 						onBack={() => setStep("model")}
