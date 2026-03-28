@@ -176,27 +176,31 @@ export async function resolveModelExecution(
 	const keyMap = await getProviderKeyMapForUser(userId);
 
 	// ─── Explicit provider selection ───────────────────────────────────────────
-	// When the user has explicitly chosen a provider, try it first.
-	// If the chosen provider is not configured, fall through to auto-resolve.
+	// When the user has explicitly chosen a provider, honour it strictly.
+	// Throw a clear error if the chosen credential is not configured — never
+	// silently fall through to a different provider (e.g. OAuth instead of key).
 	if (selectedProvider) {
 		if (selectedProvider === "openai-oauth" && model.family === "openai") {
 			const oauth = await getOpenAIOAuthAuth(userId);
-			if (oauth) {
-				return {
-					providerID: "openai",
-					modelID: model.id,
-					fullModel: `openai/${model.id}`,
-					auth: oauth,
-				};
+			if (!oauth) {
+				throw new Error(
+					"ChatGPT subscription is not connected. Connect it in Dashboard.",
+				);
 			}
-			// OAuth not actually connected — fall through
+			return {
+				providerID: "openai",
+				modelID: model.id,
+				fullModel: `openai/${model.id}`,
+				auth: oauth,
+			};
 		}
 
-		if (
-			selectedProvider === "openai-key" &&
-			model.family === "openai" &&
-			keyMap.openai
-		) {
+		if (selectedProvider === "openai-key" && model.family === "openai") {
+			if (!keyMap.openai) {
+				throw new Error(
+					"OpenAI API key is not configured. Add one in Dashboard or switch to the subscription.",
+				);
+			}
 			return {
 				providerID: "openai",
 				modelID: model.id,
@@ -212,11 +216,12 @@ export async function resolveModelExecution(
 			};
 		}
 
-		if (
-			selectedProvider === "anthropic-key" &&
-			model.family === "anthropic" &&
-			keyMap.anthropic
-		) {
+		if (selectedProvider === "anthropic-key" && model.family === "anthropic") {
+			if (!keyMap.anthropic) {
+				throw new Error(
+					"Anthropic API key is not configured. Add one in Dashboard.",
+				);
+			}
 			return {
 				providerID: "anthropic",
 				modelID: model.id,
@@ -232,7 +237,12 @@ export async function resolveModelExecution(
 			};
 		}
 
-		if (selectedProvider === "vercel" && keyMap.vercel) {
+		if (selectedProvider === "vercel") {
+			if (!keyMap.vercel) {
+				throw new Error(
+					"AI Gateway key is not configured. Add one in Dashboard.",
+				);
+			}
 			const familyPrefix = model.family;
 			return {
 				providerID: "vercel",
@@ -248,7 +258,7 @@ export async function resolveModelExecution(
 				},
 			};
 		}
-		// Selected provider not available — fall through to auto-resolve below
+		// selectedProvider doesn't match this model's family — fall through to auto-resolve
 	}
 
 	// ─── Auto-resolve (priority-based) ─────────────────────────────────────────
