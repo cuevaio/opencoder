@@ -617,18 +617,6 @@ function DashboardPage() {
 				</div>
 
 				<div className="mt-4 rounded-xl border border-border/80 bg-surface-1 p-5 sm:p-6">
-					<h2 className="font-semibold">Quick Actions</h2>
-					<div className="mt-4 flex flex-wrap gap-3">
-						<Link
-							to="/chat"
-							className="min-h-[44px] w-full rounded-md bg-foreground px-4 py-3 text-center text-sm font-medium text-background hover:opacity-90 press-scale sm:w-auto"
-						>
-							Open Chat →
-						</Link>
-					</div>
-				</div>
-
-				<div className="mt-4 rounded-xl border border-border/80 bg-surface-1 p-5 sm:p-6">
 					<div className="flex flex-wrap items-center justify-between gap-3">
 						<div>
 							<h2 className="font-semibold">AI Provider Keys</h2>
