@@ -143,6 +143,18 @@ function TurnItem({
 				</div>
 			);
 
+		case "session-error":
+			return (
+				<div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm dark:border-amber-800 dark:bg-amber-950">
+					<p className="font-medium text-amber-800 dark:text-amber-300">
+						Session stopped
+					</p>
+					<p className="mt-0.5 text-amber-700 dark:text-amber-400">
+						{item.message}
+					</p>
+				</div>
+			);
+
 		default:
 			return null;
 	}

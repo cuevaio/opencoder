@@ -31,6 +31,14 @@ interface ProviderKeyStatus {
 	updatedAt: string | null;
 }
 
+interface OpenAIOAuthStatus {
+	connected: boolean;
+	accountId: string | null;
+	updatedAt: string | null;
+	expiresAt: string | null;
+	lastError: string | null;
+}
+
 const providerLabels: Record<KeyProviderId, string> = {
 	openai: "OpenAI",
 	anthropic: "Anthropic",
@@ -59,6 +67,12 @@ function DashboardPage() {
 	const [editingProvider, setEditingProvider] = useState<KeyProviderId | null>(
 		null,
 	);
+	const [oauthStatus, setOauthStatus] = useState<OpenAIOAuthStatus | null>(
+		null,
+	);
+	const [oauthBusy, setOauthBusy] = useState(false);
+	const [oauthError, setOauthError] = useState<string | null>(null);
+	const [oauthNotice, setOauthNotice] = useState<string | null>(null);
 
 	const loadKeys = useCallback(async () => {
 		setLoadingKeys(true);
@@ -82,9 +96,138 @@ function DashboardPage() {
 		}
 	}, []);
 
+	const loadOauthStatus = useCallback(async () => {
+		setOauthError(null);
+		try {
+			const response = await fetch("/api/agent/oauth/openai/status");
+			const payload = (await response.json()) as OpenAIOAuthStatus & {
+				error?: string;
+			};
+			if (!response.ok) {
+				throw new Error(payload.error || "Failed to load OpenAI subscription");
+			}
+			setOauthStatus(payload);
+		} catch (error) {
+			setOauthError(
+				error instanceof Error
+					? error.message
+					: "Failed to load OpenAI subscription",
+			);
+		}
+	}, []);
+
 	useEffect(() => {
 		loadKeys();
-	}, [loadKeys]);
+		loadOauthStatus();
+	}, [loadKeys, loadOauthStatus]);
+
+	const handleConnectSubscription = useCallback(async () => {
+		setOauthBusy(true);
+		setOauthError(null);
+		setOauthNotice(null);
+		try {
+			const startResponse = await fetch("/api/agent/oauth/openai/start", {
+				method: "POST",
+			});
+			const startPayload = (await startResponse.json()) as {
+				pendingId?: string;
+				verificationUrl?: string;
+				userCode?: string;
+				intervalMs?: number;
+				error?: string;
+			};
+			if (!startResponse.ok || !startPayload.pendingId) {
+				throw new Error(
+					startPayload.error || "Failed to start OpenAI authorization",
+				);
+			}
+
+			if (startPayload.verificationUrl) {
+				window.open(
+					startPayload.verificationUrl,
+					"_blank",
+					"noopener,noreferrer",
+				);
+			}
+
+			setOauthNotice(
+				startPayload.userCode
+					? `Enter code ${startPayload.userCode} in the OpenAI window to finish linking.`
+					: "Complete the OpenAI authorization in the new window.",
+			);
+
+			const pollMs = Math.max(startPayload.intervalMs ?? 5000, 1000);
+			const deadline = Date.now() + 10 * 60 * 1000;
+			while (Date.now() < deadline) {
+				await new Promise((resolve) => setTimeout(resolve, pollMs));
+				const pollResponse = await fetch("/api/agent/oauth/openai/poll", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ pendingId: startPayload.pendingId }),
+				});
+				const pollPayload = (await pollResponse.json()) as {
+					status?: "pending" | "connected" | "failed" | "expired";
+					error?: string;
+				};
+
+				if (!pollResponse.ok) {
+					throw new Error(pollPayload.error || "OpenAI authorization failed");
+				}
+
+				if (pollPayload.status === "connected") {
+					await loadOauthStatus();
+					setOauthNotice("OpenAI subscription connected.");
+					return;
+				}
+
+				if (
+					pollPayload.status === "failed" ||
+					pollPayload.status === "expired"
+				) {
+					throw new Error(pollPayload.error || "OpenAI authorization failed");
+				}
+			}
+
+			throw new Error("OpenAI authorization timed out. Please try again.");
+		} catch (error) {
+			setOauthError(
+				error instanceof Error
+					? error.message
+					: "Failed to connect OpenAI subscription",
+			);
+		} finally {
+			setOauthBusy(false);
+		}
+	}, [loadOauthStatus]);
+
+	const handleDisconnectSubscription = useCallback(async () => {
+		setOauthBusy(true);
+		setOauthError(null);
+		setOauthNotice(null);
+		try {
+			const response = await fetch("/api/agent/oauth/openai/disconnect", {
+				method: "DELETE",
+			});
+			const payload = (await response.json()) as OpenAIOAuthStatus & {
+				error?: string;
+			};
+			if (!response.ok) {
+				throw new Error(
+					payload.error || "Failed to disconnect OpenAI subscription",
+				);
+			}
+			setOauthStatus(payload);
+			setOauthNotice("OpenAI subscription disconnected.");
+		} catch (error) {
+			setOauthError(
+				error instanceof Error
+					? error.message
+					: "Failed to disconnect OpenAI subscription",
+			);
+		} finally {
+			setOauthBusy(false);
+		}
+	}, []);
 
 	const handleSaveKey = useCallback(
 		async (provider: KeyProviderId) => {
@@ -231,6 +374,75 @@ function DashboardPage() {
 				</div>
 
 				<div className="mt-4 rounded-xl border border-border/80 bg-surface-1 p-5 sm:p-6">
+					<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+						<div>
+							<h2 className="font-semibold">OpenAI Subscription</h2>
+							<p className="mt-0.5 text-sm text-muted-foreground">
+								{oauthStatus?.connected
+									? "Connected — OpenAI models can use your ChatGPT subscription."
+									: "Not connected. Link ChatGPT Pro/Plus to run OpenAI models without an API key."}
+							</p>
+							{oauthStatus?.connected && oauthStatus.accountId && (
+								<p className="mt-1 text-xs text-muted-foreground">
+									Account: {oauthStatus.accountId}
+								</p>
+							)}
+							{oauthStatus?.connected && oauthStatus.expiresAt && (
+								<p className="mt-1 text-xs text-muted-foreground">
+									Token expiry:{" "}
+									{new Date(oauthStatus.expiresAt).toLocaleString()}
+								</p>
+							)}
+						</div>
+						<div className="flex shrink-0 items-center gap-2">
+							<span
+								className={`inline-block h-2 w-2 rounded-full ${oauthStatus?.connected ? "bg-green-500" : "bg-muted-foreground/40"}`}
+							/>
+							<span className="text-sm">
+								{oauthStatus?.connected ? "Connected" : "Not connected"}
+							</span>
+						</div>
+					</div>
+					<div className="mt-4 flex flex-wrap gap-2">
+						{oauthStatus?.connected ? (
+							<button
+								type="button"
+								onClick={handleDisconnectSubscription}
+								disabled={oauthBusy}
+								className="min-h-[44px] rounded-md border border-border bg-background/70 px-4 py-2.5 text-sm text-muted-foreground hover:bg-muted disabled:opacity-50"
+							>
+								{oauthBusy ? "Disconnecting…" : "Disconnect"}
+							</button>
+						) : (
+							<button
+								type="button"
+								onClick={handleConnectSubscription}
+								disabled={oauthBusy}
+								className="min-h-[44px] rounded-md bg-foreground px-4 py-2.5 text-sm font-medium text-background hover:opacity-90 press-scale disabled:opacity-50"
+							>
+								{oauthBusy ? "Connecting…" : "Connect ChatGPT Pro/Plus"}
+							</button>
+						)}
+						<button
+							type="button"
+							onClick={loadOauthStatus}
+							disabled={oauthBusy}
+							className="min-h-[44px] rounded-md border border-border bg-background/70 px-4 py-2.5 text-sm text-muted-foreground hover:bg-muted disabled:opacity-50"
+						>
+							Refresh
+						</button>
+					</div>
+					{oauthNotice && (
+						<p className="mt-3 text-sm text-muted-foreground">{oauthNotice}</p>
+					)}
+					{oauthError && (
+						<div className="mt-3 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
+							{oauthError}
+						</div>
+					)}
+				</div>
+
+				<div className="mt-4 rounded-xl border border-border/80 bg-surface-1 p-5 sm:p-6">
 					<h2 className="font-semibold">Quick Actions</h2>
 					<div className="mt-4 flex flex-wrap gap-3">
 						<Link
@@ -297,7 +509,9 @@ function DashboardPage() {
 												<div className="flex items-center gap-2">
 													<span className="text-xs text-muted-foreground">
 														{isConfigured
-															? `Configured (••••${status?.last4 ?? ""})`
+															? status?.last4
+																? `Configured (••••${status.last4})`
+																: "Configured"
 															: "Not configured"}
 													</span>
 													{isConfigured && !isEditing && (

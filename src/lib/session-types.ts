@@ -37,7 +37,8 @@ export type StreamEvent =
 			text: string;
 			images?: Array<{ url: string; mime: string; filename?: string }>;
 	  }
-	| { type: "aborted" };
+	| { type: "aborted" }
+	| { type: "session-error"; message: string };
 
 // ─── Persisted session data (stored in Postgres jsonb) ───
 // This is the OpenCode export format returned by

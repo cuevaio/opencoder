@@ -23,11 +23,17 @@ export interface EventHandlerContext {
 
 /**
  * Possible outcomes of processing one SSE subscription:
- * - "idle"        → session went idle, ready for follow-up
- * - "resubscribe" → need to re-subscribe to SSE (after question answered)
- * - "cancelled"   → user cancelled
+ * - "idle"           → session went idle, ready for follow-up
+ * - "resubscribe"    → need to re-subscribe to SSE (after question answered)
+ * - "cancelled"      → user cancelled
+ * - provider-error   → non-retryable provider error (usage limit, auth rejection)
+ *                      caller should stop cleanly and surface the message to the user
  */
-export type EventLoopOutcome = "idle" | "resubscribe" | "cancelled";
+export type EventLoopOutcome =
+	| "idle"
+	| "resubscribe"
+	| "cancelled"
+	| { outcome: "provider-error"; errorName: string; message: string };
 
 export async function processEventStream(
 	ctx: EventHandlerContext,
@@ -119,6 +125,49 @@ export async function processEventStream(
 			await dbWriter.writeMessageUpdate(event.properties.info);
 		}
 
+		// ── Session status (retry) ──
+		// When OpenCode enters a retry loop, abort immediately and surface the
+		// error to the user. We never want the task to hang indefinitely.
+		if (
+			event.type === "session.status" &&
+			// biome-ignore lint/suspicious/noExplicitAny: OpenCode event typing
+			(event.properties as any).sessionID === sessionId
+		) {
+			// biome-ignore lint/suspicious/noExplicitAny: OpenCode event typing
+			const status = (event.properties as any).status;
+			if (status?.type === "retry") {
+				const raw: string = status.message ?? "Provider error";
+
+				// Map known usage-limit strings to a friendlier message.
+				// Everything else is shown verbatim from OpenCode.
+				const lower = raw.toLowerCase();
+				const isUsageLimit =
+					lower.includes("usage limit") ||
+					lower.includes("usage_not_included") ||
+					lower.includes("insufficient_quota") ||
+					lower.includes("upgrade to plus") ||
+					lower.includes("quota exceeded") ||
+					lower.includes("upgrade your plan");
+
+				const message = isUsageLimit
+					? "Your ChatGPT Codex usage limit has been reached. Please wait for your limit to reset or upgrade your plan at https://chatgpt.com/explore/plus."
+					: raw;
+
+				logger.warn("OpenCode retry detected — aborting session", {
+					raw,
+					attempt: status.attempt,
+				});
+
+				try {
+					await client.session.abort({ sessionID: sessionId });
+				} catch {
+					// Best-effort — session will clean up on its own
+				}
+
+				return { outcome: "provider-error", errorName: "APIError", message };
+			}
+		}
+
 		// ── Permission auto-approve ──
 		if (event.type === "permission.asked") {
 			logger.warn("Permission request, auto-approving", {
@@ -184,10 +233,27 @@ export async function processEventStream(
 		) {
 			// biome-ignore lint/suspicious/noExplicitAny: OpenCode event typing
 			const error = (event.properties as any).error;
+
 			if (error?.name === "MessageAbortedError") {
 				logger.info("Session aborted (MessageAbortedError)");
 				return "idle";
 			}
+
+			// Non-retryable provider errors (usage limit, quota, auth rejection).
+			// Return a structured outcome so the caller can stop cleanly and surface
+			// the message to the user instead of failing the Trigger task.
+			if (error?.name === "APIError" || error?.name === "ProviderAuthError") {
+				const message: string =
+					error?.data?.message ?? "Provider error — check your account.";
+				logger.warn("Provider error — stopping session cleanly", {
+					errorName: error.name,
+					isRetryable: error?.data?.isRetryable,
+					message,
+				});
+				return { outcome: "provider-error", errorName: error.name, message };
+			}
+
+			// Unknown errors still throw — fails the Trigger task as before.
 			throw new Error(`Agent error: ${JSON.stringify(error)}`);
 		}
 

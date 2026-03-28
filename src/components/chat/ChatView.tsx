@@ -709,6 +709,16 @@ export function ChatView({
 					)}
 					{!pendingQuestion && (
 						<div className="space-y-1.5">
+							{isIdle && effectiveSessionRow?.lastError && (
+								<div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm dark:border-amber-800 dark:bg-amber-950">
+									<p className="font-medium text-amber-800 dark:text-amber-300">
+										Session stopped
+									</p>
+									<p className="mt-0.5 text-xs text-amber-700 dark:text-amber-400">
+										{effectiveSessionRow.lastError}
+									</p>
+								</div>
+							)}
 							{isIdle && error && (
 								<div className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
 									{error}

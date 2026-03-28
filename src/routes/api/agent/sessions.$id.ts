@@ -46,6 +46,7 @@ export const Route = createFileRoute("/api/agent/sessions/$id")({
 					selectedModel: sessions.selectedModel,
 					selectedVariant: sessions.selectedVariant,
 					status: sessions.status,
+					lastError: sessions.lastError,
 					totalTokens: sessions.totalTokens,
 					totalCost: sessions.totalCost,
 					messageCount: sessions.messageCount,

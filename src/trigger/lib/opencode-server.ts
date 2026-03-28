@@ -3,6 +3,9 @@ import { createOpencode } from "@opencode-ai/sdk/v2";
 import { logger } from "@trigger.dev/sdk/v3";
 import type { UserIdentity } from "./clone-repo.ts";
 
+const OPENAI_ISSUER = "https://auth.openai.com";
+const OPENAI_CLIENT_ID = "app_EMoamEEZ73f0CkXaXp7hrann";
+
 type OpenCodeReturn = Awaited<ReturnType<typeof createOpencode>>;
 
 export interface OpenCodeInstance {
@@ -71,14 +74,68 @@ export async function startOpenCodeServer(
 	return { client, server };
 }
 
+type ResolvedAuth =
+	| { type: "api"; key: string }
+	| {
+			type: "oauth";
+			refresh: string;
+			access: string;
+			expires: number;
+			accountId?: string;
+			enterpriseUrl?: string;
+	  };
+
+/**
+ * If the OAuth access token is expired or close to expiry, refresh it so
+ * OpenCode receives a valid token. This is best-effort — OpenCode also
+ * refreshes internally, so a failure here is not fatal.
+ */
+export async function refreshOAuthTokenIfNeeded(
+	auth: ResolvedAuth,
+): Promise<void> {
+	if (auth.type !== "oauth") return;
+	if (auth.access && auth.expires >= Date.now() + 30_000) return;
+
+	logger.info("OAuth access token expired — refreshing before session start");
+	try {
+		const res = await fetch(`${OPENAI_ISSUER}/oauth/token`, {
+			method: "POST",
+			headers: { "Content-Type": "application/x-www-form-urlencoded" },
+			body: new URLSearchParams({
+				grant_type: "refresh_token",
+				refresh_token: auth.refresh,
+				client_id: OPENAI_CLIENT_ID,
+			}).toString(),
+		});
+		if (!res.ok) {
+			logger.warn("OAuth token refresh failed (will retry inside OpenCode)", {
+				status: res.status,
+			});
+			return;
+		}
+		const tokens = (await res.json()) as {
+			access_token?: string;
+			expires_in?: number;
+		};
+		if (tokens.access_token) {
+			auth.access = tokens.access_token;
+			auth.expires = Date.now() + (tokens.expires_in ?? 3600) * 1000;
+			logger.info("OAuth access token refreshed");
+		}
+	} catch {
+		// Best-effort — OpenCode handles refresh internally too
+		logger.warn("OAuth token refresh threw (will retry inside OpenCode)");
+	}
+}
+
 export async function authenticateOpenCode(
 	client: OpenCodeInstance["client"],
 	providerID: "openai" | "anthropic" | "vercel",
-	apiKey: string,
+	auth: ResolvedAuth,
 ): Promise<void> {
 	await client.auth.set({
 		providerID,
-		auth: { type: "api", key: apiKey },
+		auth,
 	});
 	logger.info("Authenticated OpenCode provider", { providerID });
 }

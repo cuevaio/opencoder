@@ -40,6 +40,7 @@ export interface SessionDetail extends SessionSummary {
 	lastPrompt: string | null;
 	selectedVariant: string | null;
 	eventSeq: number;
+	lastError: string | null;
 }
 
 export const sessionQueryOptions = (id: number) =>

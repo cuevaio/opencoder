@@ -11,6 +11,7 @@ function getRequiredEnv(name: "GITHUB_CLIENT_ID" | "GITHUB_CLIENT_SECRET") {
 }
 
 export const auth = betterAuth({
+  baseURL: process.env.VERCEL_URL,
 	database: pool,
 	socialProviders: {
 		github: {

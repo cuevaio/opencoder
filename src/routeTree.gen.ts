@@ -32,6 +32,10 @@ import { Route as ApiAgentAnswerRouteImport } from './routes/api/agent/answer'
 import { Route as AuthedChatSessionIdRouteImport } from './routes/_authed/chat.$sessionId'
 import { Route as ApiAgentSessionsIdRouteImport } from './routes/api/agent/sessions.$id'
 import { Route as ApiAgentSessionsIdEventsRouteImport } from './routes/api/agent/sessions.$id.events'
+import { Route as ApiAgentOauthOpenaiStatusRouteImport } from './routes/api/agent/oauth/openai/status'
+import { Route as ApiAgentOauthOpenaiStartRouteImport } from './routes/api/agent/oauth/openai/start'
+import { Route as ApiAgentOauthOpenaiPollRouteImport } from './routes/api/agent/oauth/openai/poll'
+import { Route as ApiAgentOauthOpenaiDisconnectRouteImport } from './routes/api/agent/oauth/openai/disconnect'
 
 const SignInRoute = SignInRouteImport.update({
   id: '/sign-in',
@@ -149,6 +153,29 @@ const ApiAgentSessionsIdEventsRoute =
     path: '/events',
     getParentRoute: () => ApiAgentSessionsIdRoute,
   } as any)
+const ApiAgentOauthOpenaiStatusRoute =
+  ApiAgentOauthOpenaiStatusRouteImport.update({
+    id: '/api/agent/oauth/openai/status',
+    path: '/api/agent/oauth/openai/status',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiAgentOauthOpenaiStartRoute =
+  ApiAgentOauthOpenaiStartRouteImport.update({
+    id: '/api/agent/oauth/openai/start',
+    path: '/api/agent/oauth/openai/start',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiAgentOauthOpenaiPollRoute = ApiAgentOauthOpenaiPollRouteImport.update({
+  id: '/api/agent/oauth/openai/poll',
+  path: '/api/agent/oauth/openai/poll',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAgentOauthOpenaiDisconnectRoute =
+  ApiAgentOauthOpenaiDisconnectRouteImport.update({
+    id: '/api/agent/oauth/openai/disconnect',
+    path: '/api/agent/oauth/openai/disconnect',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -172,6 +199,10 @@ export interface FileRoutesByFullPath {
   '/api/webhook/github': typeof ApiWebhookGithubRoute
   '/chat/': typeof AuthedChatIndexRoute
   '/api/agent/sessions/$id': typeof ApiAgentSessionsIdRouteWithChildren
+  '/api/agent/oauth/openai/disconnect': typeof ApiAgentOauthOpenaiDisconnectRoute
+  '/api/agent/oauth/openai/poll': typeof ApiAgentOauthOpenaiPollRoute
+  '/api/agent/oauth/openai/start': typeof ApiAgentOauthOpenaiStartRoute
+  '/api/agent/oauth/openai/status': typeof ApiAgentOauthOpenaiStatusRoute
   '/api/agent/sessions/$id/events': typeof ApiAgentSessionsIdEventsRoute
 }
 export interface FileRoutesByTo {
@@ -195,6 +226,10 @@ export interface FileRoutesByTo {
   '/api/webhook/github': typeof ApiWebhookGithubRoute
   '/chat': typeof AuthedChatIndexRoute
   '/api/agent/sessions/$id': typeof ApiAgentSessionsIdRouteWithChildren
+  '/api/agent/oauth/openai/disconnect': typeof ApiAgentOauthOpenaiDisconnectRoute
+  '/api/agent/oauth/openai/poll': typeof ApiAgentOauthOpenaiPollRoute
+  '/api/agent/oauth/openai/start': typeof ApiAgentOauthOpenaiStartRoute
+  '/api/agent/oauth/openai/status': typeof ApiAgentOauthOpenaiStatusRoute
   '/api/agent/sessions/$id/events': typeof ApiAgentSessionsIdEventsRoute
 }
 export interface FileRoutesById {
@@ -221,6 +256,10 @@ export interface FileRoutesById {
   '/api/webhook/github': typeof ApiWebhookGithubRoute
   '/_authed/chat/': typeof AuthedChatIndexRoute
   '/api/agent/sessions/$id': typeof ApiAgentSessionsIdRouteWithChildren
+  '/api/agent/oauth/openai/disconnect': typeof ApiAgentOauthOpenaiDisconnectRoute
+  '/api/agent/oauth/openai/poll': typeof ApiAgentOauthOpenaiPollRoute
+  '/api/agent/oauth/openai/start': typeof ApiAgentOauthOpenaiStartRoute
+  '/api/agent/oauth/openai/status': typeof ApiAgentOauthOpenaiStatusRoute
   '/api/agent/sessions/$id/events': typeof ApiAgentSessionsIdEventsRoute
 }
 export interface FileRouteTypes {
@@ -247,6 +286,10 @@ export interface FileRouteTypes {
     | '/api/webhook/github'
     | '/chat/'
     | '/api/agent/sessions/$id'
+    | '/api/agent/oauth/openai/disconnect'
+    | '/api/agent/oauth/openai/poll'
+    | '/api/agent/oauth/openai/start'
+    | '/api/agent/oauth/openai/status'
     | '/api/agent/sessions/$id/events'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -270,6 +313,10 @@ export interface FileRouteTypes {
     | '/api/webhook/github'
     | '/chat'
     | '/api/agent/sessions/$id'
+    | '/api/agent/oauth/openai/disconnect'
+    | '/api/agent/oauth/openai/poll'
+    | '/api/agent/oauth/openai/start'
+    | '/api/agent/oauth/openai/status'
     | '/api/agent/sessions/$id/events'
   id:
     | '__root__'
@@ -295,6 +342,10 @@ export interface FileRouteTypes {
     | '/api/webhook/github'
     | '/_authed/chat/'
     | '/api/agent/sessions/$id'
+    | '/api/agent/oauth/openai/disconnect'
+    | '/api/agent/oauth/openai/poll'
+    | '/api/agent/oauth/openai/start'
+    | '/api/agent/oauth/openai/status'
     | '/api/agent/sessions/$id/events'
   fileRoutesById: FileRoutesById
 }
@@ -316,6 +367,10 @@ export interface RootRouteChildren {
   ApiShapesSessionsRoute: typeof ApiShapesSessionsRoute
   ApiUploadImageRoute: typeof ApiUploadImageRoute
   ApiWebhookGithubRoute: typeof ApiWebhookGithubRoute
+  ApiAgentOauthOpenaiDisconnectRoute: typeof ApiAgentOauthOpenaiDisconnectRoute
+  ApiAgentOauthOpenaiPollRoute: typeof ApiAgentOauthOpenaiPollRoute
+  ApiAgentOauthOpenaiStartRoute: typeof ApiAgentOauthOpenaiStartRoute
+  ApiAgentOauthOpenaiStatusRoute: typeof ApiAgentOauthOpenaiStatusRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -481,6 +536,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAgentSessionsIdEventsRouteImport
       parentRoute: typeof ApiAgentSessionsIdRoute
     }
+    '/api/agent/oauth/openai/status': {
+      id: '/api/agent/oauth/openai/status'
+      path: '/api/agent/oauth/openai/status'
+      fullPath: '/api/agent/oauth/openai/status'
+      preLoaderRoute: typeof ApiAgentOauthOpenaiStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/agent/oauth/openai/start': {
+      id: '/api/agent/oauth/openai/start'
+      path: '/api/agent/oauth/openai/start'
+      fullPath: '/api/agent/oauth/openai/start'
+      preLoaderRoute: typeof ApiAgentOauthOpenaiStartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/agent/oauth/openai/poll': {
+      id: '/api/agent/oauth/openai/poll'
+      path: '/api/agent/oauth/openai/poll'
+      fullPath: '/api/agent/oauth/openai/poll'
+      preLoaderRoute: typeof ApiAgentOauthOpenaiPollRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/agent/oauth/openai/disconnect': {
+      id: '/api/agent/oauth/openai/disconnect'
+      path: '/api/agent/oauth/openai/disconnect'
+      fullPath: '/api/agent/oauth/openai/disconnect'
+      preLoaderRoute: typeof ApiAgentOauthOpenaiDisconnectRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -551,6 +634,10 @@ const rootRouteChildren: RootRouteChildren = {
   ApiShapesSessionsRoute: ApiShapesSessionsRoute,
   ApiUploadImageRoute: ApiUploadImageRoute,
   ApiWebhookGithubRoute: ApiWebhookGithubRoute,
+  ApiAgentOauthOpenaiDisconnectRoute: ApiAgentOauthOpenaiDisconnectRoute,
+  ApiAgentOauthOpenaiPollRoute: ApiAgentOauthOpenaiPollRoute,
+  ApiAgentOauthOpenaiStartRoute: ApiAgentOauthOpenaiStartRoute,
+  ApiAgentOauthOpenaiStatusRoute: ApiAgentOauthOpenaiStatusRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
