@@ -3,8 +3,10 @@ import { tasks } from "@trigger.dev/sdk/v3";
 import { and, eq } from "drizzle-orm";
 import { db } from "#/db/index.ts";
 import { sessionEvents, agentSessions as sessions } from "#/db/schema.ts";
+import type { SelectedProvider } from "#/lib/ai/model-registry.ts";
 import {
 	isAllowedModel,
+	isValidSelectedProvider,
 	normalizeModelId,
 	normalizeVariant,
 } from "#/lib/ai/model-registry.ts";
@@ -35,6 +37,7 @@ export const Route = createFileRoute("/api/agent/continue")({
 					mode?: "plan" | "build";
 					model?: string;
 					variant?: string;
+					provider?: string;
 					imageUrls?: Array<{ url: string; mime: string; filename?: string }>;
 				};
 
@@ -135,6 +138,14 @@ export const Route = createFileRoute("/api/agent/continue")({
 					model,
 					body.variant || session.selectedVariant,
 				);
+				// Use explicitly chosen provider from body, or fall back to what the session had
+				const provider: SelectedProvider | undefined = isValidSelectedProvider(
+					body.provider,
+				)
+					? body.provider
+					: isValidSelectedProvider(session.selectedProvider)
+						? session.selectedProvider
+						: undefined;
 				const modelCheck = await canExecuteModel(userId, model);
 				if (!modelCheck.ok) {
 					return Response.json({ error: modelCheck.message }, { status: 400 });
@@ -165,6 +176,7 @@ export const Route = createFileRoute("/api/agent/continue")({
 								mode: mode || (session.mode as "plan" | "build") || "build",
 								selectedModel: model,
 								selectedVariant: variant,
+								selectedProvider: provider ?? null,
 							})
 							.where(
 								and(eq(sessions.id, sessionId), eq(sessions.userId, userId)),
@@ -178,6 +190,7 @@ export const Route = createFileRoute("/api/agent/continue")({
 						mode: mode || (session.mode as "plan" | "build") || "build",
 						model,
 						variant,
+						provider,
 						githubToken,
 						userId,
 						userName,

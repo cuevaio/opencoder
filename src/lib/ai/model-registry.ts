@@ -1,6 +1,108 @@
 export const keyProviderIds = ["openai", "anthropic", "vercel"] as const;
 export type KeyProviderId = (typeof keyProviderIds)[number];
 
+/**
+ * A specific access path the user can explicitly select for running a model.
+ * - "openai-oauth"   → ChatGPT Subscription (device-flow OAuth)
+ * - "openai-key"     → OpenAI direct API key
+ * - "anthropic-key"  → Anthropic direct API key
+ * - "vercel"         → Vercel AI Gateway (works for both model families)
+ */
+export type SelectedProvider =
+	| "openai-oauth"
+	| "openai-key"
+	| "anthropic-key"
+	| "vercel";
+
+export const selectedProviderIds: SelectedProvider[] = [
+	"openai-oauth",
+	"openai-key",
+	"anthropic-key",
+	"vercel",
+];
+
+export function isValidSelectedProvider(v: unknown): v is SelectedProvider {
+	return typeof v === "string" && (selectedProviderIds as string[]).includes(v);
+}
+
+export interface ProviderInfo {
+	id: SelectedProvider;
+	label: string;
+	/** Short badge shown in the picker ("oauth" | "direct" | "gateway"). */
+	badge: string;
+	/** Which model families this provider can serve. */
+	families: Array<"openai" | "anthropic">;
+}
+
+export const providerInfoMap: Record<SelectedProvider, ProviderInfo> = {
+	"openai-oauth": {
+		id: "openai-oauth",
+		label: "ChatGPT Subscription",
+		badge: "oauth",
+		families: ["openai"],
+	},
+	"openai-key": {
+		id: "openai-key",
+		label: "OpenAI API key",
+		badge: "direct",
+		families: ["openai"],
+	},
+	"anthropic-key": {
+		id: "anthropic-key",
+		label: "Anthropic API key",
+		badge: "direct",
+		families: ["anthropic"],
+	},
+	vercel: {
+		id: "vercel",
+		label: "AI Gateway",
+		badge: "gateway",
+		families: ["openai", "anthropic"],
+	},
+};
+
+/**
+ * Returns the list of providers compatible with a model family,
+ * annotated with whether the user has that provider configured.
+ */
+export function getCompatibleProviders(
+	family: "openai" | "anthropic",
+	configuredKeys: Set<KeyProviderId>,
+	oauthConnected: boolean,
+): Array<{ info: ProviderInfo; available: boolean }> {
+	const candidates: SelectedProvider[] =
+		family === "openai"
+			? ["openai-oauth", "openai-key", "vercel"]
+			: ["anthropic-key", "vercel"];
+
+	return candidates.map((id) => {
+		let available = false;
+		if (id === "openai-oauth") available = oauthConnected;
+		else if (id === "openai-key") available = configuredKeys.has("openai");
+		else if (id === "anthropic-key")
+			available = configuredKeys.has("anthropic");
+		else if (id === "vercel") available = configuredKeys.has("vercel");
+		return { info: providerInfoMap[id], available };
+	});
+}
+
+/**
+ * Returns the first available (configured) provider for a given model family,
+ * following the same priority as the server's auto-resolve logic.
+ */
+export function getDefaultProvider(
+	family: "openai" | "anthropic",
+	configuredKeys: Set<KeyProviderId>,
+	oauthConnected: boolean,
+): SelectedProvider | undefined {
+	const candidates = getCompatibleProviders(
+		family,
+		configuredKeys,
+		oauthConnected,
+	);
+	return candidates.find((c) => c.available)?.info.id;
+}
+
 export interface ModelOption {
 	id: string;
 	label: string;

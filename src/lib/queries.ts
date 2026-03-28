@@ -39,8 +39,11 @@ export interface SessionDetail extends SessionSummary {
 	triggerRunId: string;
 	lastPrompt: string | null;
 	selectedVariant: string | null;
+	selectedProvider: string | null;
 	eventSeq: number;
 	lastError: string | null;
+	gitStateStatus: string;
+	gitStateError: string | null;
 }
 
 export const sessionQueryOptions = (id: number) =>

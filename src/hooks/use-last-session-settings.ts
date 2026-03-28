@@ -1,8 +1,10 @@
 import { useCallback, useState } from "react";
+import type { SelectedProvider } from "#/lib/ai/model-registry.ts";
 import {
 	defaultModel,
 	getDefaultVariant,
 	isAllowedModel,
+	isValidSelectedProvider,
 } from "#/lib/ai/model-registry.ts";
 
 const STORAGE_KEY = "opencoder-last-session";
@@ -12,6 +14,8 @@ export interface LastSessionSettings {
 	model: string;
 	variant: string;
 	mode: "plan" | "build";
+	/** Explicitly chosen provider. Undefined = use server auto-resolve. */
+	provider?: SelectedProvider;
 }
 
 function readFromStorage(): LastSessionSettings {
@@ -36,6 +40,9 @@ function readFromStorage(): LastSessionSettings {
 				parsed.mode === "plan" || parsed.mode === "build"
 					? parsed.mode
 					: "build",
+			provider: isValidSelectedProvider(parsed.provider)
+				? parsed.provider
+				: undefined,
 		};
 	} catch {
 		return makeDefaults();
@@ -48,6 +55,7 @@ function makeDefaults(): LastSessionSettings {
 		model: defaultModel,
 		variant: getDefaultVariant(defaultModel),
 		mode: "build",
+		provider: undefined,
 	};
 }
 

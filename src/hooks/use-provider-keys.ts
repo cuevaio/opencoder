@@ -12,11 +12,13 @@ interface OpenAIOAuthStatus {
 
 export function useProviderKeyStatus(): {
 	configuredKeys: Set<KeyProviderId>;
+	oauthConnected: boolean;
 	loading: boolean;
 } {
 	const [configuredKeys, setConfiguredKeys] = useState<Set<KeyProviderId>>(
 		new Set(),
 	);
+	const [oauthConnected, setOauthConnected] = useState(false);
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
@@ -38,10 +40,13 @@ export function useProviderKeyStatus(): {
 					for (const k of keysData.keys ?? []) {
 						if (k.configured) set.add(k.provider);
 					}
-					if (oauthData.connected) {
+					const isOauthConnected = oauthData.connected ?? false;
+					if (isOauthConnected) {
+						// Keep "openai" in the set for backward compat with existing callers
 						set.add("openai");
 					}
 					setConfiguredKeys(set);
+					setOauthConnected(isOauthConnected);
 				},
 			)
 			.catch(() => {
@@ -56,5 +61,5 @@ export function useProviderKeyStatus(): {
 		};
 	}, []);
 
-	return { configuredKeys, loading };
+	return { configuredKeys, oauthConnected, loading };
 }

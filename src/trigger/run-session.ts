@@ -4,8 +4,9 @@ import { eq } from "drizzle-orm";
 import { z } from "zod/v4";
 import { db } from "#/db/index.ts";
 import { agentSessions as sessions } from "#/db/schema";
+import type { SelectedProvider } from "#/lib/ai/model-registry.ts";
 import { defaultModel } from "#/lib/ai/model-registry.ts";
-import { modelIdSchema } from "#/lib/ai/model-types.ts";
+import { modelIdSchema, selectedProviderSchema } from "#/lib/ai/model-types.ts";
 import { resolveModelExecution } from "#/lib/ai/provider-keys.ts";
 import type { SessionExportData } from "#/lib/session-types";
 import { resetCancelChecker } from "./lib/cancel-checker";
@@ -60,6 +61,8 @@ const runSessionSchema = z.object({
 			}),
 		)
 		.default([]),
+	/** Explicitly chosen provider access path. Undefined = auto-resolve by priority. */
+	provider: selectedProviderSchema.optional(),
 });
 
 export type RunSessionPayload = z.infer<typeof runSessionSchema>;
@@ -139,6 +142,7 @@ export const runSession = schemaTask({
 		const modelExecution = await resolveModelExecution(
 			payload.userId,
 			payload.model,
+			payload.provider as SelectedProvider | undefined,
 		);
 
 		// Best-effort token refresh so OpenCode gets a fresh access token.

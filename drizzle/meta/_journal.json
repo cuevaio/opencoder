@@ -57,6 +57,13 @@
       "when": 1774722703213,
       "tag": "0007_session-last-error",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1774725628074,
+      "tag": "0008_aspiring_turbo",
+      "breakpoints": true
     }
   ]
 }
