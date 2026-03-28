@@ -10,12 +10,8 @@ function getRequiredEnv(name: "GITHUB_CLIENT_ID" | "GITHUB_CLIENT_SECRET") {
 	return value;
 }
 
-if (!process.env.VERCEL_URL) {
-	throw new Error("Missing required environment variable: VERCEL_URL");
-}
-
 export const auth = betterAuth({
-  baseURL: process.env.VERCEL_URL?.includes("localhost") ? `http://${process.env.VERCEL_URL}` : `https://${process.env.VERCEL_URL}`,
+  baseURL: process.env.VERCEL_ENV === 'preview' ? `https://${process.env.VERCEL_URL}` : process.env.APP_URL,
 	database: pool,
 	socialProviders: {
 		github: {
