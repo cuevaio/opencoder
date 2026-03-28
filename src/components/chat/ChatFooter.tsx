@@ -4,7 +4,11 @@ import type {
 	KeyProviderId,
 	SelectedProvider,
 } from "#/lib/ai/model-registry.ts";
-import { getDefaultVariant, getModelOption } from "#/lib/ai/model-registry.ts";
+import {
+	getCompatibleProviders,
+	getDefaultVariant,
+	getModelOption,
+} from "#/lib/ai/model-registry.ts";
 import { cn } from "#/lib/utils.ts";
 import { Button } from "../ui/button.tsx";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover.tsx";
@@ -50,6 +54,37 @@ type PendingImage = {
 	errorMessage?: string;
 };
 
+/**
+ * Returns `candidate` if it is currently available for `modelId`, otherwise
+ * falls back to the first available provider. Prevents a stale localStorage
+ * value (e.g. "openai-key" after the key was removed) from being used.
+ */
+function resolveValidProvider(
+	candidate: SelectedProvider | undefined,
+	modelId: string,
+	configuredKeys: Set<KeyProviderId>,
+	oauthConnected: boolean,
+): SelectedProvider | undefined {
+	const modelOption = getModelOption(modelId);
+	if (!modelOption) return undefined;
+
+	const candidates = getCompatibleProviders(
+		modelOption.family,
+		configuredKeys,
+		oauthConnected,
+	);
+
+	if (
+		candidate !== undefined &&
+		candidates.some((c) => c.info.id === candidate && c.available)
+	) {
+		return candidate;
+	}
+
+	// Stored provider is unavailable — pick the first available one instead
+	return candidates.find((c) => c.available)?.info.id;
+}
+
 const MAX_IMAGE_SIZE = 4.5 * 1024 * 1024;
 const MAX_IMAGES = 10;
 const ALLOWED_IMAGE_TYPES = new Set([
@@ -81,8 +116,13 @@ export function ChatFooter({
 	const [variant, setVariant] = useState(
 		defaultVariant ?? getDefaultVariant(model),
 	);
-	const [provider, setProvider] = useState<SelectedProvider | undefined>(
-		defaultProvider,
+	const [provider, setProvider] = useState<SelectedProvider | undefined>(() =>
+		resolveValidProvider(
+			defaultProvider,
+			model,
+			configuredKeys,
+			oauthConnected,
+		),
 	);
 	const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
 	const [uploadError, setUploadError] = useState<string | null>(null);
@@ -106,8 +146,15 @@ export function ChatFooter({
 	}, [defaultMode]);
 
 	useEffect(() => {
-		setProvider(defaultProvider);
-	}, [defaultProvider]);
+		setProvider(
+			resolveValidProvider(
+				defaultProvider,
+				model,
+				configuredKeys,
+				oauthConnected,
+			),
+		);
+	}, [defaultProvider, model, configuredKeys, oauthConnected]);
 
 	// Notify parent whenever settings change so it can persist them
 	// biome-ignore lint/correctness/useExhaustiveDependencies: onSettingsChange is intentionally excluded to avoid infinite loops when parent re-renders
