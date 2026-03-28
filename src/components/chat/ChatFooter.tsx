@@ -1,29 +1,15 @@
-import {
-	Check,
-	ChevronDown,
-	Paperclip,
-	SendHorizontal,
-	Square,
-	X,
-} from "lucide-react";
+import { Paperclip, SendHorizontal, Square, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { KeyProviderId } from "#/lib/ai/model-registry.ts";
-import {
-	familyLabels,
-	getDefaultVariant,
-	getModelOption,
-	getModelsByFamily,
+import type {
+	KeyProviderId,
+	SelectedProvider,
 } from "#/lib/ai/model-registry.ts";
+import { getDefaultVariant, getModelOption } from "#/lib/ai/model-registry.ts";
 import { cn } from "#/lib/utils.ts";
 import { Button } from "../ui/button.tsx";
-import {
-	Command,
-	CommandGroup,
-	CommandItem,
-	CommandList,
-} from "../ui/command.tsx";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover.tsx";
 import { Textarea } from "../ui/textarea.tsx";
+import { ModelProviderPicker } from "./ModelProviderPicker.tsx";
 
 interface ChatFooterProps {
 	onSubmit: (
@@ -32,13 +18,15 @@ interface ChatFooterProps {
 		model: string,
 		variant: string,
 		imageUrls: Array<{ url: string; mime: string; filename?: string }>,
+		provider?: SelectedProvider,
 	) => void;
 	onCancel?: () => void;
-	/** Called whenever model, variant, or mode changes so the parent can persist it. */
+	/** Called whenever model, variant, mode, or provider changes so the parent can persist it. */
 	onSettingsChange?: (settings: {
 		model: string;
 		variant: string;
 		mode: "plan" | "build";
+		provider?: SelectedProvider;
 	}) => void;
 	isWorking?: boolean;
 	isSubmitting?: boolean;
@@ -46,8 +34,10 @@ interface ChatFooterProps {
 	defaultMode?: "plan" | "build";
 	defaultModel?: string;
 	defaultVariant?: string;
+	defaultProvider?: SelectedProvider;
 	placeholder?: string;
 	configuredKeys?: Set<KeyProviderId>;
+	oauthConnected?: boolean;
 }
 
 type PendingImage = {
@@ -69,19 +59,6 @@ const ALLOWED_IMAGE_TYPES = new Set([
 	"image/webp",
 ]);
 
-function getRoutingInfo(
-	family: string,
-	configuredKeys: Set<KeyProviderId>,
-): { label: string; available: boolean; kind: "direct" | "gateway" | "none" } {
-	if (configuredKeys.has(family as KeyProviderId)) {
-		return { label: "direct", available: true, kind: "direct" };
-	}
-	if (configuredKeys.has("vercel")) {
-		return { label: "via gateway", available: true, kind: "gateway" };
-	}
-	return { label: "no key", available: false, kind: "none" };
-}
-
 export function ChatFooter({
 	onSubmit,
 	onCancel,
@@ -92,20 +69,20 @@ export function ChatFooter({
 	defaultMode = "build",
 	defaultModel,
 	defaultVariant,
+	defaultProvider,
 	placeholder = "Describe what you want to do...",
 	configuredKeys = new Set<KeyProviderId>(),
+	oauthConnected = false,
 }: ChatFooterProps) {
-	const modelsByFamily = getModelsByFamily();
-
 	const [text, setText] = useState("");
-	const [modelPickerOpen, setModelPickerOpen] = useState(false);
 	const [advancedOpen, setAdvancedOpen] = useState(false);
 	const [mode, setMode] = useState<"plan" | "build">(defaultMode);
-	const [model, setModel] = useState(
-		defaultModel ?? Object.values(modelsByFamily)[0]?.[0]?.id ?? "",
-	);
+	const [model, setModel] = useState(defaultModel ?? "gpt-5.3-codex");
 	const [variant, setVariant] = useState(
 		defaultVariant ?? getDefaultVariant(model),
+	);
+	const [provider, setProvider] = useState<SelectedProvider | undefined>(
+		defaultProvider,
 	);
 	const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
 	const [uploadError, setUploadError] = useState<string | null>(null);
@@ -128,24 +105,35 @@ export function ChatFooter({
 		setMode(defaultMode);
 	}, [defaultMode]);
 
+	useEffect(() => {
+		setProvider(defaultProvider);
+	}, [defaultProvider]);
+
 	// Notify parent whenever settings change so it can persist them
 	// biome-ignore lint/correctness/useExhaustiveDependencies: onSettingsChange is intentionally excluded to avoid infinite loops when parent re-renders
 	useEffect(() => {
-		onSettingsChange?.({ model, variant, mode });
-	}, [model, variant, mode]);
+		onSettingsChange?.({ model, variant, mode, provider });
+	}, [model, variant, mode, provider]);
 
 	// When model changes, reset variant to the new model's default
 	// (unless the current variant is still valid for the new model)
 	const handleModelChange = useCallback(
-		(newModel: string) => {
+		(newModel: string, newProvider: SelectedProvider | undefined) => {
 			setModel(newModel);
+			setProvider(newProvider);
 			const option = getModelOption(newModel);
 			if (option && !option.variants.includes(variant)) {
 				setVariant(option.defaultVariant);
 			}
-			setModelPickerOpen(false);
 		},
 		[variant],
+	);
+
+	const handleProviderChange = useCallback(
+		(newProvider: SelectedProvider | undefined) => {
+			setProvider(newProvider);
+		},
+		[],
 	);
 
 	const handleSubmit = useCallback(() => {
@@ -158,7 +146,7 @@ export function ChatFooter({
 				mime: img.mime,
 				filename: img.filename,
 			}));
-		onSubmit(text.trim(), mode, model, variant, imageUrls);
+		onSubmit(text.trim(), mode, model, variant, imageUrls, provider);
 		for (const img of pendingImages) {
 			URL.revokeObjectURL(img.localPreviewUrl);
 		}
@@ -170,6 +158,7 @@ export function ChatFooter({
 		mode,
 		model,
 		variant,
+		provider,
 		isSubmitting,
 		disabled,
 		isWorking,
@@ -336,9 +325,6 @@ export function ChatFooter({
 	const currentModelOption = getModelOption(model);
 	const availableVariants = currentModelOption?.variants ?? [];
 
-	// Keys are being loaded — treat as unknown
-	const keysKnown = configuredKeys.size > 0;
-
 	return (
 		<div className="space-y-2">
 			<div
@@ -420,81 +406,16 @@ export function ChatFooter({
 				<div className="pointer-events-none absolute inset-x-2 bottom-2 flex items-center justify-between">
 					{/* Left side: model picker + advanced options */}
 					<div className="pointer-events-auto flex items-center gap-1">
-						{/* Inline model label / picker trigger */}
-						<Popover open={modelPickerOpen} onOpenChange={setModelPickerOpen}>
-							<PopoverTrigger asChild>
-								<button
-									type="button"
-									disabled={isSubmitting || disabled}
-									className="flex h-8 min-h-8 items-center gap-1 rounded-md border border-border bg-background/70 px-2 text-xs font-medium text-muted-foreground hover:bg-muted disabled:opacity-50"
-									aria-label="Select model"
-									aria-haspopup="listbox"
-									aria-expanded={modelPickerOpen}
-								>
-									{currentModelOption?.label ?? model}
-									<ChevronDown className="size-3 opacity-60" />
-								</button>
-							</PopoverTrigger>
-							<PopoverContent align="start" className="w-[min(92vw,20rem)] p-0">
-								<Command>
-									<CommandList>
-										{Object.entries(modelsByFamily).map(
-											([family, familyModels]) => (
-												<CommandGroup
-													key={family}
-													heading={familyLabels[family] ?? family}
-												>
-													{familyModels.map((option) => {
-														const routing = keysKnown
-															? getRoutingInfo(family, configuredKeys)
-															: null;
-														const isSelected = model === option.id;
-														const isDisabled =
-															routing !== null && !routing.available;
-
-														return (
-															<CommandItem
-																key={option.id}
-																value={option.id}
-																onSelect={() =>
-																	!isDisabled && handleModelChange(option.id)
-																}
-																disabled={isDisabled}
-																className="flex items-center justify-between"
-															>
-																<div className="flex items-center gap-2">
-																	{isSelected ? (
-																		<Check className="size-3.5 shrink-0" />
-																	) : (
-																		<span className="size-3.5 shrink-0" />
-																	)}
-																	<span>{option.label}</span>
-																</div>
-																{routing !== null && (
-																	<span
-																		className={cn(
-																			"ml-2 shrink-0 text-[10px]",
-																			routing.kind === "direct" &&
-																				"text-green-600 dark:text-green-400",
-																			routing.kind === "gateway" &&
-																				"text-muted-foreground",
-																			routing.kind === "none" &&
-																				"text-red-500/70",
-																		)}
-																	>
-																		{routing.label}
-																	</span>
-																)}
-															</CommandItem>
-														);
-													})}
-												</CommandGroup>
-											),
-										)}
-									</CommandList>
-								</Command>
-							</PopoverContent>
-						</Popover>
+						{/* Two-step model + provider picker */}
+						<ModelProviderPicker
+							model={model}
+							provider={provider}
+							configuredKeys={configuredKeys}
+							oauthConnected={oauthConnected}
+							disabled={isSubmitting || disabled}
+							onModelChange={handleModelChange}
+							onProviderChange={handleProviderChange}
+						/>
 
 						{/* Advanced options popover (thinking, mode) */}
 						<Popover open={advancedOpen} onOpenChange={setAdvancedOpen}>

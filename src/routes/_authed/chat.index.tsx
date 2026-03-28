@@ -21,7 +21,7 @@ function NewSessionPage() {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const { setSidebarOpen } = useChatLayoutContext();
-	const { configuredKeys } = useProviderKeyStatus();
+	const { configuredKeys, oauthConnected } = useProviderKeyStatus();
 
 	const handleSubmit = useCallback(
 		async (
@@ -30,6 +30,7 @@ function NewSessionPage() {
 			model: string,
 			variant: string,
 			imageUrls: Array<{ url: string; mime: string; filename?: string }>,
+			provider?: import("#/lib/ai/model-registry.ts").SelectedProvider,
 		) => {
 			const repoUrl = lastSettings.repoUrl;
 			if (!repoUrl.trim() || !prompt.trim()) return;
@@ -47,6 +48,7 @@ function NewSessionPage() {
 						mode,
 						model,
 						variant,
+						provider,
 						imageUrls,
 					}),
 				});
@@ -132,8 +134,10 @@ function NewSessionPage() {
 						defaultModel={lastSettings.model}
 						defaultVariant={lastSettings.variant}
 						defaultMode={lastSettings.mode}
+						defaultProvider={lastSettings.provider}
 						onSettingsChange={updateLastSettings}
 						configuredKeys={configuredKeys}
+						oauthConnected={oauthConnected}
 					/>
 				</div>
 			</main>

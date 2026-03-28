@@ -3,8 +3,10 @@ import { tasks } from "@trigger.dev/sdk/v3";
 import { eq } from "drizzle-orm";
 import { db } from "#/db/index.ts";
 import { sessionEvents, agentSessions as sessions } from "#/db/schema.ts";
+import type { SelectedProvider } from "#/lib/ai/model-registry.ts";
 import {
 	isAllowedModel,
+	isValidSelectedProvider,
 	normalizeModelId,
 	normalizeVariant,
 } from "#/lib/ai/model-registry.ts";
@@ -94,6 +96,7 @@ export const Route = createFileRoute("/api/agent/run")({
 					mode?: "plan" | "build";
 					model?: string;
 					variant?: string;
+					provider?: string;
 					imageUrls?: Array<{ url: string; mime: string; filename?: string }>;
 				};
 				const { repoUrl, prompt, mode } = body;
@@ -143,6 +146,11 @@ export const Route = createFileRoute("/api/agent/run")({
 				}
 				const model = normalizeModelId(body.model);
 				const variant = normalizeVariant(model, body.variant);
+				const provider: SelectedProvider | undefined = isValidSelectedProvider(
+					body.provider,
+				)
+					? body.provider
+					: undefined;
 
 				if (!repoUrl || !prompt) {
 					return Response.json(
@@ -193,6 +201,7 @@ export const Route = createFileRoute("/api/agent/run")({
 									mode: mode || "build",
 									selectedModel: model,
 									selectedVariant: variant,
+									selectedProvider: provider ?? null,
 									status: "running",
 									eventSeq: 1,
 								})
@@ -222,6 +231,7 @@ export const Route = createFileRoute("/api/agent/run")({
 						mode: mode || "build",
 						model,
 						variant,
+						provider,
 						githubToken,
 						userId,
 						userName,

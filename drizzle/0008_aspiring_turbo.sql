@@ -1,0 +1,1 @@
+ALTER TABLE "agent_sessions" ADD COLUMN "selected_provider" text;

@@ -12,7 +12,11 @@ import {
 import { useAutoScroll } from "#/hooks/use-auto-scroll";
 import { useProviderKeyStatus } from "#/hooks/use-provider-keys.ts";
 import { computeStatus } from "#/lib/agent-status";
-import { defaultModel as defaultModelId } from "#/lib/ai/model-registry.ts";
+import type { SelectedProvider } from "#/lib/ai/model-registry.ts";
+import {
+	defaultModel as defaultModelId,
+	isValidSelectedProvider,
+} from "#/lib/ai/model-registry.ts";
 import { createSessionEventsCollection } from "#/lib/collections.ts";
 import {
 	buildDisplayItems,
@@ -63,6 +67,7 @@ interface ChatViewProps {
 		model: string,
 		variant: string,
 		imageUrls: Array<{ url: string; mime: string; filename?: string }>,
+		provider?: import("#/lib/ai/model-registry.ts").SelectedProvider,
 	) => void;
 	onDeleteSession: () => void;
 	onRetrySync: () => void;
@@ -85,7 +90,7 @@ export function ChatView({
 	const bottomRef = useRef<HTMLDivElement>(null);
 	const pendingLoadOlderAnchor = useRef<number | null>(null);
 	const { setSidebarOpen, isMobile } = useChatLayoutContext();
-	const { configuredKeys } = useProviderKeyStatus();
+	const { configuredKeys, oauthConnected } = useProviderKeyStatus();
 	const [showSlowLoadFallback, setShowSlowLoadFallback] = useState(false);
 	const [electricSyncError, setElectricSyncError] = useState<string | null>(
 		null,
@@ -541,6 +546,13 @@ export function ChatView({
 		(effectiveSessionRow.selectedModel as string | undefined) || defaultModelId;
 	const defaultVariant =
 		(effectiveSessionRow.selectedVariant as string | undefined) || undefined;
+	// Derive defaultProvider from stored session data
+	const storedProvider = effectiveSessionRow.selectedProvider as
+		| string
+		| null
+		| undefined;
+	const resolvedDefaultProvider: SelectedProvider | undefined =
+		isValidSelectedProvider(storedProvider) ? storedProvider : undefined;
 	const handleCreateOrUpdatePr = () => {
 		onFollowup(
 			hasExistingPr ? UPDATE_PR_PROMPT : CREATE_PR_PROMPT,
@@ -548,6 +560,7 @@ export function ChatView({
 			defaultModel,
 			defaultVariant ?? "max",
 			[],
+			resolvedDefaultProvider,
 		);
 	};
 	const totalTokens =
@@ -733,8 +746,10 @@ export function ChatView({
 								defaultMode={defaultMode}
 								defaultModel={defaultModel}
 								defaultVariant={defaultVariant}
+								defaultProvider={resolvedDefaultProvider}
 								placeholder="Send a follow-up message..."
 								configuredKeys={configuredKeys}
+								oauthConnected={oauthConnected}
 							/>
 						</div>
 					)}

@@ -2,6 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
 import { ChatView } from "#/components/chat/ChatView.tsx";
+import type { SelectedProvider } from "#/lib/ai/model-registry.ts";
 
 export const Route = createFileRoute("/_authed/chat/$sessionId")({
 	// Prevent router re-evaluation on Electric data changes
@@ -31,6 +32,7 @@ function ChatSessionPage() {
 			model: string,
 			variant: string,
 			imageUrls: Array<{ url: string; mime: string; filename?: string }>,
+			provider?: SelectedProvider,
 		) => {
 			setIsSubmitting(true);
 			setError(null);
@@ -45,6 +47,7 @@ function ChatSessionPage() {
 						mode,
 						model,
 						variant,
+						provider,
 						imageUrls,
 					}),
 				});

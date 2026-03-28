@@ -45,6 +45,7 @@ export const Route = createFileRoute("/api/agent/sessions/$id")({
 					mode: sessions.mode,
 					selectedModel: sessions.selectedModel,
 					selectedVariant: sessions.selectedVariant,
+					selectedProvider: sessions.selectedProvider,
 					status: sessions.status,
 					lastError: sessions.lastError,
 					totalTokens: sessions.totalTokens,
@@ -54,6 +55,8 @@ export const Route = createFileRoute("/api/agent/sessions/$id")({
 					eventSeq: sessions.eventSeq,
 					createdAt: sessions.createdAt,
 					completedAt: sessions.completedAt,
+					gitStateStatus: sessions.gitStateStatus,
+					gitStateError: sessions.gitStateError,
 				};
 
 				const [row] = includeSessionData

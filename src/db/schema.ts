@@ -212,6 +212,7 @@ export const agentSessions = pgTable(
 		mode: text("mode").notNull().default("build"),
 		selectedModel: text("selected_model").notNull().default("gpt-5.3-codex"),
 		selectedVariant: text("selected_variant"),
+		selectedProvider: text("selected_provider"),
 		status: text("status").notNull().default("running"),
 		sessionData: jsonb("session_data"),
 		totalTokens: integer("total_tokens"),

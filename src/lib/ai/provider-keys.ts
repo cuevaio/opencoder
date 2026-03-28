@@ -6,7 +6,7 @@ import {
 	encryptSecret,
 	maskSecret,
 } from "#/lib/server/encryption.ts";
-import type { KeyProviderId } from "./model-registry.ts";
+import type { KeyProviderId, SelectedProvider } from "./model-registry.ts";
 import { getModelOption } from "./model-registry.ts";
 import { getOpenAIOAuthAuth, hasOpenAIOAuth } from "./provider-oauth.ts";
 
@@ -166,6 +166,7 @@ export async function canExecuteModel(
 export async function resolveModelExecution(
 	userId: string,
 	modelId: string,
+	selectedProvider?: SelectedProvider,
 ): Promise<ResolvedModelExecution> {
 	const model = getModelOption(modelId);
 	if (!model) {
@@ -173,6 +174,84 @@ export async function resolveModelExecution(
 	}
 
 	const keyMap = await getProviderKeyMapForUser(userId);
+
+	// ─── Explicit provider selection ───────────────────────────────────────────
+	// When the user has explicitly chosen a provider, try it first.
+	// If the chosen provider is not configured, fall through to auto-resolve.
+	if (selectedProvider) {
+		if (selectedProvider === "openai-oauth" && model.family === "openai") {
+			const oauth = await getOpenAIOAuthAuth(userId);
+			if (oauth) {
+				return {
+					providerID: "openai",
+					modelID: model.id,
+					fullModel: `openai/${model.id}`,
+					auth: oauth,
+				};
+			}
+			// OAuth not actually connected — fall through
+		}
+
+		if (
+			selectedProvider === "openai-key" &&
+			model.family === "openai" &&
+			keyMap.openai
+		) {
+			return {
+				providerID: "openai",
+				modelID: model.id,
+				fullModel: `openai/${model.id}`,
+				auth: {
+					type: "api",
+					key: decryptSecret({
+						ciphertext: keyMap.openai.encryptedKey,
+						iv: keyMap.openai.iv,
+						authTag: keyMap.openai.authTag,
+					}),
+				},
+			};
+		}
+
+		if (
+			selectedProvider === "anthropic-key" &&
+			model.family === "anthropic" &&
+			keyMap.anthropic
+		) {
+			return {
+				providerID: "anthropic",
+				modelID: model.id,
+				fullModel: `anthropic/${model.id}`,
+				auth: {
+					type: "api",
+					key: decryptSecret({
+						ciphertext: keyMap.anthropic.encryptedKey,
+						iv: keyMap.anthropic.iv,
+						authTag: keyMap.anthropic.authTag,
+					}),
+				},
+			};
+		}
+
+		if (selectedProvider === "vercel" && keyMap.vercel) {
+			const familyPrefix = model.family;
+			return {
+				providerID: "vercel",
+				modelID: `${familyPrefix}/${model.id}`,
+				fullModel: `vercel/${familyPrefix}/${model.id}`,
+				auth: {
+					type: "api",
+					key: decryptSecret({
+						ciphertext: keyMap.vercel.encryptedKey,
+						iv: keyMap.vercel.iv,
+						authTag: keyMap.vercel.authTag,
+					}),
+				},
+			};
+		}
+		// Selected provider not available — fall through to auto-resolve below
+	}
+
+	// ─── Auto-resolve (priority-based) ─────────────────────────────────────────
 
 	if (model.family === "openai") {
 		const oauth = await getOpenAIOAuthAuth(userId);
