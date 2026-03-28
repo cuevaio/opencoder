@@ -4,7 +4,13 @@ import {
 	useNavigate,
 	useParams,
 } from "@tanstack/react-router";
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+	createContext,
+	useCallback,
+	useContext,
+	useEffect,
+	useState,
+} from "react";
 import { SessionSidebar } from "#/components/chat/SessionSidebar.tsx";
 import {
 	Sheet,
@@ -17,7 +23,24 @@ import { useIsMobile } from "#/hooks/use-media-query.ts";
 interface ChatLayoutContextValue {
 	sidebarOpen: boolean;
 	setSidebarOpen: (open: boolean) => void;
+	toggleSidebar: () => void;
 	isMobile: boolean;
+}
+
+function isEditableTarget(target: EventTarget | null): boolean {
+	if (!(target instanceof HTMLElement)) {
+		return false;
+	}
+
+	if (target.isContentEditable) {
+		return true;
+	}
+
+	return Boolean(
+		target.closest(
+			"input, textarea, select, [contenteditable], [role='textbox']",
+		),
+	);
 }
 
 export const ChatLayoutContext = createContext<ChatLayoutContextValue | null>(
@@ -47,7 +70,31 @@ export const Route = createFileRoute("/_authed/chat")({
 function ChatLayout() {
 	const navigate = useNavigate();
 	const isMobile = useIsMobile();
-	const [sidebarOpen, setSidebarOpen] = useState(false);
+	const [desktopSidebarVisible, setDesktopSidebarVisible] = useState(true);
+	const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+	const sidebarOpen = isMobile ? mobileSidebarOpen : desktopSidebarVisible;
+
+	const setSidebarOpen = useCallback(
+		(open: boolean) => {
+			if (isMobile) {
+				setMobileSidebarOpen(open);
+				return;
+			}
+
+			setDesktopSidebarVisible(open);
+		},
+		[isMobile],
+	);
+
+	const toggleSidebar = useCallback(() => {
+		if (isMobile) {
+			setMobileSidebarOpen((prev) => !prev);
+			return;
+		}
+
+		setDesktopSidebarVisible((prev) => !prev);
+	}, [isMobile]);
 
 	// Auto-close the sidebar on mobile when the active session changes
 	// biome-ignore lint/suspicious/noExplicitAny: params type resolves after routeTree regen
@@ -56,9 +103,37 @@ function ChatLayout() {
 	// biome-ignore lint/correctness/useExhaustiveDependencies: sessionId triggers close-on-navigate; isMobile guards the effect
 	useEffect(() => {
 		if (isMobile) {
-			setSidebarOpen(false);
+			setMobileSidebarOpen(false);
 		}
 	}, [isMobile, sessionId]);
+
+	useEffect(() => {
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.defaultPrevented || event.repeat || event.isComposing) {
+				return;
+			}
+
+			if (event.key.toLowerCase() !== "b") {
+				return;
+			}
+
+			const hasPrimaryModifier =
+				(event.metaKey || event.ctrlKey) && event.metaKey !== event.ctrlKey;
+			if (!hasPrimaryModifier || event.shiftKey || event.altKey) {
+				return;
+			}
+
+			if (isEditableTarget(event.target)) {
+				return;
+			}
+
+			event.preventDefault();
+			toggleSidebar();
+		};
+
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [toggleSidebar]);
 
 	const handleSelectSession = (id: number) =>
 		navigate({
@@ -73,20 +148,23 @@ function ChatLayout() {
 			value={{
 				sidebarOpen,
 				setSidebarOpen,
+				toggleSidebar,
 				isMobile,
 			}}
 		>
 			<div className="app-shell flex h-[100dvh] min-h-0 overflow-hidden bg-background text-foreground md:h-screen">
 				{/* Desktop sidebar (md+) */}
-				<div className="hidden shrink-0 border-r border-border/70 bg-surface-1 md:block md:w-[clamp(16rem,24vw,21rem)]">
-					<SessionSidebar
-						onSelectSession={handleSelectSession}
-						onNewSession={handleNewSession}
-					/>
-				</div>
+				{desktopSidebarVisible && (
+					<div className="hidden shrink-0 border-r border-border/70 bg-surface-1 md:block md:w-[clamp(16rem,24vw,21rem)]">
+						<SessionSidebar
+							onSelectSession={handleSelectSession}
+							onNewSession={handleNewSession}
+						/>
+					</div>
+				)}
 
 				{/* Mobile sidebar (<md) */}
-				<Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+				<Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
 					<SheetContent
 						side="left"
 						showCloseButton={false}
