@@ -98,25 +98,25 @@ function GenericToolCall({ tool, sessionId }: ToolCallProps) {
 			<button
 				type="button"
 				onClick={() => setExpanded(!expanded)}
-				className="flex w-full flex-wrap items-center gap-2 px-3 py-3 text-left hover:bg-surface-2 press-scale sm:py-2.5"
+				className="flex w-full min-w-0 items-center gap-2 px-3 py-3 text-left hover:bg-surface-2 press-scale sm:py-2.5"
 			>
 				<StatusIndicator status={tool.status} />
-				<span className="font-medium [overflow-wrap:anywhere]">
-					{info.title}
-				</span>
-				{info.subtitle && (
-					<span className="min-w-0 truncate text-muted-foreground [overflow-wrap:anywhere]">
-						{info.subtitle}
-					</span>
-				)}
-				{tool.title && (
-					<span className="min-w-0 truncate text-muted-foreground [overflow-wrap:anywhere]">
-						{tool.title}
-					</span>
-				)}
+				<div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
+					<span className="min-w-0 truncate font-medium">{info.title}</span>
+					{info.subtitle && (
+						<span className="min-w-0 flex-1 truncate text-muted-foreground">
+							{info.subtitle}
+						</span>
+					)}
+					{tool.title && (
+						<span className="min-w-0 flex-1 truncate text-muted-foreground">
+							{tool.title}
+						</span>
+					)}
+				</div>
 				<ChevronRight
 					className={cn(
-						"ml-auto h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-200 ease-out",
+						"h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-200 ease-out",
 						expanded && "rotate-90",
 					)}
 				/>
