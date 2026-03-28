@@ -38,7 +38,7 @@ function TodoWriteToolCall({ tool }: ToolCallProps) {
 	const progress = parseTodoProgress(extractTodosFromTool(tool) ?? []);
 
 	return (
-		<div className="rounded-xl border border-border/80 bg-surface-1 text-xs">
+		<div className="overflow-hidden rounded-xl border border-border/80 bg-surface-1 text-xs">
 			<div className="flex items-center gap-2 px-3 py-2.5">
 				<StatusIndicator status={tool.status} />
 				<span className="font-medium">Todos</span>
@@ -94,7 +94,7 @@ function GenericToolCall({ tool, sessionId }: ToolCallProps) {
 	const hasChildReasoning = !!tool.childReasoning?.trim();
 
 	return (
-		<div className="rounded-xl border border-border/80 bg-surface-1 text-xs">
+		<div className="overflow-hidden rounded-xl border border-border/80 bg-surface-1 text-xs">
 			<button
 				type="button"
 				onClick={() => setExpanded(!expanded)}
