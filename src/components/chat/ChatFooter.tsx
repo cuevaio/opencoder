@@ -2,6 +2,7 @@ import { Paperclip, SendHorizontal, Square, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type {
 	KeyProviderId,
+	OAuthProviderStatus,
 	SelectedProvider,
 } from "#/lib/ai/model-registry.ts";
 import {
@@ -41,7 +42,7 @@ interface ChatFooterProps {
 	defaultProvider?: SelectedProvider;
 	placeholder?: string;
 	configuredKeys?: Set<KeyProviderId>;
-	oauthConnected?: boolean;
+	oauthStatus?: OAuthProviderStatus;
 }
 
 type PendingImage = {
@@ -63,7 +64,7 @@ function resolveValidProvider(
 	candidate: SelectedProvider | undefined,
 	modelId: string,
 	configuredKeys: Set<KeyProviderId>,
-	oauthConnected: boolean,
+	oauthStatus: OAuthProviderStatus,
 ): SelectedProvider | undefined {
 	const modelOption = getModelOption(modelId);
 	if (!modelOption) return undefined;
@@ -71,7 +72,7 @@ function resolveValidProvider(
 	const candidates = getCompatibleProviders(
 		modelOption.family,
 		configuredKeys,
-		oauthConnected,
+		oauthStatus,
 	);
 
 	if (
@@ -87,6 +88,10 @@ function resolveValidProvider(
 
 const MAX_IMAGE_SIZE = 4.5 * 1024 * 1024;
 const MAX_IMAGES = 10;
+const DEFAULT_OAUTH_STATUS: OAuthProviderStatus = {
+	openai: false,
+	copilot: false,
+};
 const ALLOWED_IMAGE_TYPES = new Set([
 	"image/png",
 	"image/jpeg",
@@ -107,7 +112,7 @@ export function ChatFooter({
 	defaultProvider,
 	placeholder = "Describe what you want to do...",
 	configuredKeys = new Set<KeyProviderId>(),
-	oauthConnected = false,
+	oauthStatus = DEFAULT_OAUTH_STATUS,
 }: ChatFooterProps) {
 	const [text, setText] = useState("");
 	const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -117,12 +122,7 @@ export function ChatFooter({
 		defaultVariant ?? getDefaultVariant(model),
 	);
 	const [provider, setProvider] = useState<SelectedProvider | undefined>(() =>
-		resolveValidProvider(
-			defaultProvider,
-			model,
-			configuredKeys,
-			oauthConnected,
-		),
+		resolveValidProvider(defaultProvider, model, configuredKeys, oauthStatus),
 	);
 	const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
 	const [uploadError, setUploadError] = useState<string | null>(null);
@@ -147,14 +147,9 @@ export function ChatFooter({
 
 	useEffect(() => {
 		setProvider(
-			resolveValidProvider(
-				defaultProvider,
-				model,
-				configuredKeys,
-				oauthConnected,
-			),
+			resolveValidProvider(defaultProvider, model, configuredKeys, oauthStatus),
 		);
-	}, [defaultProvider, model, configuredKeys, oauthConnected]);
+	}, [defaultProvider, model, configuredKeys, oauthStatus]);
 
 	// Notify parent whenever settings change so it can persist them
 	// biome-ignore lint/correctness/useExhaustiveDependencies: onSettingsChange is intentionally excluded to avoid infinite loops when parent re-renders
@@ -193,7 +188,15 @@ export function ChatFooter({
 				mime: img.mime,
 				filename: img.filename,
 			}));
-		onSubmit(text.trim(), mode, model, variant, imageUrls, provider);
+		// Always resolve the effective provider at submit time so we never send
+		// a stale or unavailable provider to the server.
+		const effectiveProvider = resolveValidProvider(
+			provider,
+			model,
+			configuredKeys,
+			oauthStatus,
+		);
+		onSubmit(text.trim(), mode, model, variant, imageUrls, effectiveProvider);
 		for (const img of pendingImages) {
 			URL.revokeObjectURL(img.localPreviewUrl);
 		}
@@ -206,6 +209,8 @@ export function ChatFooter({
 		model,
 		variant,
 		provider,
+		configuredKeys,
+		oauthStatus,
 		isSubmitting,
 		disabled,
 		isWorking,
@@ -458,7 +463,7 @@ export function ChatFooter({
 							model={model}
 							provider={provider}
 							configuredKeys={configuredKeys}
-							oauthConnected={oauthConnected}
+							oauthStatus={oauthStatus}
 							disabled={isSubmitting || disabled}
 							onModelChange={handleModelChange}
 							onProviderChange={handleProviderChange}
