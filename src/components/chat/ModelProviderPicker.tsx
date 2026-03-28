@@ -50,8 +50,27 @@ export function ModelProviderPicker({
 	const modelsByFamily = getModelsByFamily();
 	const currentModelOption = getModelOption(model);
 
-	// Resolve provider display info
-	const providerLabel = provider ? providerInfoMap[provider]?.label : undefined;
+	// Resolve the effective provider for display: use the explicit choice only if
+	// it is currently available, otherwise fall back to the computed default.
+	const effectiveProvider = (() => {
+		if (!currentModelOption) return provider;
+		const compatible = getCompatibleProviders(
+			currentModelOption.family,
+			configuredKeys,
+			oauthConnected,
+		);
+		if (
+			provider !== undefined &&
+			compatible.some((c) => c.info.id === provider && c.available)
+		) {
+			return provider;
+		}
+		return compatible.find((c) => c.available)?.info.id;
+	})();
+
+	const providerLabel = effectiveProvider
+		? providerInfoMap[effectiveProvider]?.label
+		: undefined;
 
 	// Button label: "Model · Provider" or just "Model" if no provider resolved
 	const buttonLabel = currentModelOption?.label ?? model;
@@ -208,7 +227,10 @@ function ModelStep({
 						{familyModels.map((option) => {
 							const isSelected = currentModel === option.id;
 
-							// Compute routing badge
+							// Compute routing badge.
+							// For the selected model, show the effective provider (explicit
+							// choice if available, else default). For other models, show
+							// their computed default.
 							const defaultProv = keysKnown
 								? getDefaultProvider(
 										option.family,
@@ -216,7 +238,22 @@ function ModelStep({
 										oauthConnected,
 									)
 								: undefined;
-							const hasAny = defaultProv !== undefined;
+							const compatible = keysKnown
+								? getCompatibleProviders(
+										option.family,
+										configuredKeys,
+										oauthConnected,
+									)
+								: [];
+							const badgeProv =
+								isSelected &&
+								currentProvider !== undefined &&
+								compatible.some(
+									(c) => c.info.id === currentProvider && c.available,
+								)
+									? currentProvider
+									: defaultProv;
+							const hasAny = badgeProv !== undefined;
 
 							return (
 								<CommandItem
@@ -242,8 +279,8 @@ function ModelStep({
 													hasAny ? "text-muted-foreground" : "text-red-500/70",
 												)}
 											>
-												{hasAny && defaultProv
-													? (providerInfoMap[defaultProv]?.badge ?? "")
+												{hasAny && badgeProv
+													? (providerInfoMap[badgeProv]?.badge ?? "")
 													: "no key"}
 											</span>
 										)}

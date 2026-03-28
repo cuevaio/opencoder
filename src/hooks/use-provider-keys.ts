@@ -41,10 +41,9 @@ export function useProviderKeyStatus(): {
 						if (k.configured) set.add(k.provider);
 					}
 					const isOauthConnected = oauthData.connected ?? false;
-					if (isOauthConnected) {
-						// Keep "openai" in the set for backward compat with existing callers
-						set.add("openai");
-					}
+					// Note: OAuth is tracked separately via oauthConnected — do NOT add
+					// "openai" to configuredKeys here, or "openai-key" would appear
+					// available even when no API key is stored.
 					setConfiguredKeys(set);
 					setOauthConnected(isOauthConnected);
 				},
