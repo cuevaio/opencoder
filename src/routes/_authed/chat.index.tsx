@@ -21,7 +21,7 @@ function NewSessionPage() {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const { setSidebarOpen } = useChatLayoutContext();
-	const { configuredKeys, oauthConnected } = useProviderKeyStatus();
+	const { configuredKeys, oauthStatus } = useProviderKeyStatus();
 
 	const handleSubmit = useCallback(
 		async (
@@ -137,7 +137,7 @@ function NewSessionPage() {
 						defaultProvider={lastSettings.provider}
 						onSettingsChange={updateLastSettings}
 						configuredKeys={configuredKeys}
-						oauthConnected={oauthConnected}
+						oauthStatus={oauthStatus}
 					/>
 				</div>
 			</main>

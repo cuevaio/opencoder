@@ -169,7 +169,7 @@ export const Route = createFileRoute("/api/agent/run")({
 					);
 				}
 
-				const modelCheck = await canExecuteModel(userId, model);
+				const modelCheck = await canExecuteModel(userId, model, provider);
 				if (!modelCheck.ok) {
 					return Response.json({ error: modelCheck.message }, { status: 400 });
 				}

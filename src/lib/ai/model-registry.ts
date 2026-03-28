@@ -10,16 +10,23 @@ export type KeyProviderId = (typeof keyProviderIds)[number];
  */
 export type SelectedProvider =
 	| "openai-oauth"
+	| "github-copilot"
 	| "openai-key"
 	| "anthropic-key"
 	| "vercel";
 
 export const selectedProviderIds: SelectedProvider[] = [
 	"openai-oauth",
+	"github-copilot",
 	"openai-key",
 	"anthropic-key",
 	"vercel",
 ];
+
+export interface OAuthProviderStatus {
+	openai: boolean;
+	copilot: boolean;
+}
 
 export function isValidSelectedProvider(v: unknown): v is SelectedProvider {
 	return typeof v === "string" && (selectedProviderIds as string[]).includes(v);
@@ -30,8 +37,6 @@ export interface ProviderInfo {
 	label: string;
 	/** Short badge shown in the picker ("oauth" | "direct" | "gateway"). */
 	badge: string;
-	/** Which model families this provider can serve. */
-	families: Array<"openai" | "anthropic">;
 }
 
 export const providerInfoMap: Record<SelectedProvider, ProviderInfo> = {
@@ -39,45 +44,44 @@ export const providerInfoMap: Record<SelectedProvider, ProviderInfo> = {
 		id: "openai-oauth",
 		label: "ChatGPT Subscription",
 		badge: "oauth",
-		families: ["openai"],
 	},
 	"openai-key": {
 		id: "openai-key",
 		label: "OpenAI API key",
 		badge: "direct",
-		families: ["openai"],
+	},
+	"github-copilot": {
+		id: "github-copilot",
+		label: "GitHub Copilot",
+		badge: "oauth",
 	},
 	"anthropic-key": {
 		id: "anthropic-key",
 		label: "Anthropic API key",
 		badge: "direct",
-		families: ["anthropic"],
 	},
 	vercel: {
 		id: "vercel",
 		label: "AI Gateway",
 		badge: "gateway",
-		families: ["openai", "anthropic"],
 	},
 };
 
 /**
- * Returns the list of providers compatible with a model family,
- * annotated with whether the user has that provider configured.
+ * Returns providers compatible with a specific model,
+ * annotated with whether each provider is currently configured.
  */
 export function getCompatibleProviders(
-	family: "openai" | "anthropic",
+	modelId: string,
 	configuredKeys: Set<KeyProviderId>,
-	oauthConnected: boolean,
+	oauthStatus: OAuthProviderStatus,
 ): Array<{ info: ProviderInfo; available: boolean }> {
-	const candidates: SelectedProvider[] =
-		family === "openai"
-			? ["openai-oauth", "openai-key", "vercel"]
-			: ["anthropic-key", "vercel"];
+	const candidates = getCompatibleProviderIds(modelId);
 
 	return candidates.map((id) => {
 		let available = false;
-		if (id === "openai-oauth") available = oauthConnected;
+		if (id === "openai-oauth") available = oauthStatus.openai;
+		else if (id === "github-copilot") available = oauthStatus.copilot;
 		else if (id === "openai-key") available = configuredKeys.has("openai");
 		else if (id === "anthropic-key")
 			available = configuredKeys.has("anthropic");
@@ -87,18 +91,18 @@ export function getCompatibleProviders(
 }
 
 /**
- * Returns the first available (configured) provider for a given model family,
+ * Returns the first available (configured) provider for a given model,
  * following the same priority as the server's auto-resolve logic.
  */
 export function getDefaultProvider(
-	family: "openai" | "anthropic",
+	modelId: string,
 	configuredKeys: Set<KeyProviderId>,
-	oauthConnected: boolean,
+	oauthStatus: OAuthProviderStatus,
 ): SelectedProvider | undefined {
 	const candidates = getCompatibleProviders(
-		family,
+		modelId,
 		configuredKeys,
-		oauthConnected,
+		oauthStatus,
 	);
 	return candidates.find((c) => c.available)?.info.id;
 }
@@ -115,8 +119,29 @@ export interface ModelOption {
 
 export const modelOptions: ModelOption[] = [
 	{
+		id: "gpt-5.4",
+		label: "GPT-5.4",
+		family: "openai",
+		variants: ["none", "low", "medium", "high", "xhigh"],
+		defaultVariant: "high",
+	},
+	{
+		id: "gpt-5.4-mini",
+		label: "GPT-5.4 Mini",
+		family: "openai",
+		variants: ["none", "low", "medium", "high", "xhigh"],
+		defaultVariant: "high",
+	},
+	{
 		id: "gpt-5.3-codex",
 		label: "GPT-5.3 Codex",
+		family: "openai",
+		variants: ["none", "low", "medium", "high", "xhigh"],
+		defaultVariant: "high",
+	},
+	{
+		id: "gpt-5.3-codex-spark",
+		label: "GPT-5.3 Codex Spark",
 		family: "openai",
 		variants: ["none", "low", "medium", "high", "xhigh"],
 		defaultVariant: "high",
@@ -127,6 +152,27 @@ export const modelOptions: ModelOption[] = [
 		family: "openai",
 		variants: ["none", "low", "medium", "high", "xhigh"],
 		defaultVariant: "high",
+	},
+	{
+		id: "gpt-5-mini",
+		label: "GPT-5 Mini",
+		family: "openai",
+		variants: ["none", "low", "medium", "high", "xhigh"],
+		defaultVariant: "high",
+	},
+	{
+		id: "gpt-4.1",
+		label: "GPT-4.1",
+		family: "openai",
+		variants: ["none"],
+		defaultVariant: "none",
+	},
+	{
+		id: "gpt-4o",
+		label: "GPT-4o",
+		family: "openai",
+		variants: ["none"],
+		defaultVariant: "none",
 	},
 	{
 		id: "claude-sonnet-4.6",
@@ -143,6 +189,13 @@ export const modelOptions: ModelOption[] = [
 		defaultVariant: "max",
 	},
 	{
+		id: "claude-haiku-4.5",
+		label: "Claude Haiku 4.5",
+		family: "anthropic",
+		variants: ["none", "high", "max"],
+		defaultVariant: "max",
+	},
+	{
 		id: "claude-haiku-3.5",
 		label: "Claude Haiku 3.5",
 		family: "anthropic",
@@ -150,6 +203,67 @@ export const modelOptions: ModelOption[] = [
 		defaultVariant: "max",
 	},
 ];
+
+const modelById: Record<string, ModelOption> = Object.fromEntries(
+	modelOptions.map((model) => [model.id, model]),
+);
+
+/**
+ * Per-provider model availability.
+ *
+ * `openai-oauth` follows the Codex OAuth allowlist in opencode's
+ * `plugin/codex.ts` (intersected with models exposed in this app).
+ *
+ * `github-copilot` follows the dedicated Copilot provider path in
+ * opencode's `provider/provider.ts`.
+ */
+const providerModelIds: Record<SelectedProvider, string[]> = {
+	"openai-oauth": [
+		"gpt-5.4",
+		"gpt-5.4-mini",
+		"gpt-5.3-codex",
+		"gpt-5.3-codex-spark",
+	],
+	"github-copilot": ["gpt-5-mini", "claude-haiku-4.5", "gpt-4.1", "gpt-4o"],
+	"openai-key": [
+		"gpt-5.4",
+		"gpt-5.4-mini",
+		"gpt-5.3-codex",
+		"gpt-5.3-codex-spark",
+		"gpt-5-mini",
+		"gpt-5.2",
+		"gpt-4.1",
+		"gpt-4o",
+	],
+	"anthropic-key": [
+		"claude-haiku-4.5",
+		"claude-haiku-3.5",
+		"claude-sonnet-4.6",
+		"claude-opus-4.6",
+	],
+	vercel: modelOptions.map((model) => model.id),
+};
+
+export function getModelsForProvider(
+	provider: SelectedProvider,
+): ModelOption[] {
+	return providerModelIds[provider]
+		.map((id) => modelById[id])
+		.filter((model): model is ModelOption => !!model);
+}
+
+export function getCompatibleProviderIds(modelId: string): SelectedProvider[] {
+	return selectedProviderIds.filter((provider) =>
+		providerModelIds[provider].includes(modelId),
+	);
+}
+
+export function providerSupportsModel(
+	provider: SelectedProvider,
+	modelId: string,
+): boolean {
+	return providerModelIds[provider].includes(modelId);
+}
 
 export const defaultModel = "gpt-5.3-codex";
 
@@ -171,11 +285,11 @@ const modelIds = modelOptions.map((model) => model.id);
 export const allowedModelIds = modelIds;
 
 export function getModelOption(modelId: string): ModelOption | undefined {
-	return modelOptions.find((model) => model.id === modelId);
+	return modelById[modelId];
 }
 
 export function isAllowedModel(modelId: string): boolean {
-	return modelOptions.some((model) => model.id === modelId);
+	return !!modelById[modelId];
 }
 
 export function normalizeModelId(modelId: string | undefined | null): string {

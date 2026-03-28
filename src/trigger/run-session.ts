@@ -147,7 +147,10 @@ export const runSession = schemaTask({
 
 		// Best-effort token refresh so OpenCode gets a fresh access token.
 		// Errors here are non-fatal — OpenCode refreshes internally too.
-		await refreshOAuthTokenIfNeeded(modelExecution.auth);
+		await refreshOAuthTokenIfNeeded(
+			modelExecution.providerID,
+			modelExecution.auth,
+		);
 
 		let tmpDir: string | undefined;
 		try {

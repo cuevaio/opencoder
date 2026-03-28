@@ -2,6 +2,7 @@ import { Check, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useState } from "react";
 import type {
 	KeyProviderId,
+	OAuthProviderStatus,
 	SelectedProvider,
 } from "#/lib/ai/model-registry.ts";
 import {
@@ -25,7 +26,7 @@ interface ModelProviderPickerProps {
 	model: string;
 	provider: SelectedProvider | undefined;
 	configuredKeys: Set<KeyProviderId>;
-	oauthConnected: boolean;
+	oauthStatus: OAuthProviderStatus;
 	disabled?: boolean;
 	onModelChange: (
 		model: string,
@@ -40,7 +41,7 @@ export function ModelProviderPicker({
 	model,
 	provider,
 	configuredKeys,
-	oauthConnected,
+	oauthStatus,
 	disabled = false,
 	onModelChange,
 	onProviderChange,
@@ -55,9 +56,9 @@ export function ModelProviderPicker({
 	const effectiveProvider = (() => {
 		if (!currentModelOption) return provider;
 		const compatible = getCompatibleProviders(
-			currentModelOption.family,
+			currentModelOption.id,
 			configuredKeys,
-			oauthConnected,
+			oauthStatus,
 		);
 		if (
 			provider !== undefined &&
@@ -90,9 +91,9 @@ export function ModelProviderPicker({
 			if (!newModel) return;
 
 			const compatible = getCompatibleProviders(
-				newModel.family,
+				newModel.id,
 				configuredKeys,
-				oauthConnected,
+				oauthStatus,
 			);
 			const availableProviders = compatible.filter((c) => c.available);
 
@@ -122,7 +123,7 @@ export function ModelProviderPicker({
 				setStep("provider");
 			}
 		},
-		[provider, configuredKeys, oauthConnected, onModelChange],
+		[provider, configuredKeys, oauthStatus, onModelChange],
 	);
 
 	const handleSelectProvider = useCallback(
@@ -144,11 +145,7 @@ export function ModelProviderPicker({
 	);
 
 	const providerCandidates = currentModelOption
-		? getCompatibleProviders(
-				currentModelOption.family,
-				configuredKeys,
-				oauthConnected,
-			)
+		? getCompatibleProviders(currentModelOption.id, configuredKeys, oauthStatus)
 		: [];
 
 	return (
@@ -178,7 +175,7 @@ export function ModelProviderPicker({
 						currentProvider={effectiveProvider}
 						modelsByFamily={modelsByFamily}
 						configuredKeys={configuredKeys}
-						oauthConnected={oauthConnected}
+						oauthStatus={oauthStatus}
 						onSelectModel={handleSelectModel}
 						onChangeProvider={handleChangeProviderForCurrentModel}
 					/>
@@ -203,7 +200,7 @@ interface ModelStepProps {
 	currentProvider: SelectedProvider | undefined;
 	modelsByFamily: ReturnType<typeof getModelsByFamily>;
 	configuredKeys: Set<KeyProviderId>;
-	oauthConnected: boolean;
+	oauthStatus: OAuthProviderStatus;
 	onSelectModel: (modelId: string) => void;
 	onChangeProvider: (e: React.MouseEvent) => void;
 }
@@ -213,11 +210,12 @@ function ModelStep({
 	currentProvider,
 	modelsByFamily,
 	configuredKeys,
-	oauthConnected,
+	oauthStatus,
 	onSelectModel,
 	onChangeProvider,
 }: ModelStepProps) {
-	const keysKnown = configuredKeys.size > 0 || oauthConnected;
+	const keysKnown =
+		configuredKeys.size > 0 || oauthStatus.openai || oauthStatus.copilot;
 
 	return (
 		<Command>
@@ -232,18 +230,10 @@ function ModelStep({
 							// choice if available, else default). For other models, show
 							// their computed default.
 							const defaultProv = keysKnown
-								? getDefaultProvider(
-										option.family,
-										configuredKeys,
-										oauthConnected,
-									)
+								? getDefaultProvider(option.id, configuredKeys, oauthStatus)
 								: undefined;
 							const compatible = keysKnown
-								? getCompatibleProviders(
-										option.family,
-										configuredKeys,
-										oauthConnected,
-									)
+								? getCompatibleProviders(option.id, configuredKeys, oauthStatus)
 								: [];
 							const badgeProv =
 								isSelected &&

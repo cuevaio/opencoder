@@ -90,7 +90,7 @@ export function ChatView({
 	const bottomRef = useRef<HTMLDivElement>(null);
 	const pendingLoadOlderAnchor = useRef<number | null>(null);
 	const { setSidebarOpen, isMobile } = useChatLayoutContext();
-	const { configuredKeys, oauthConnected } = useProviderKeyStatus();
+	const { configuredKeys, oauthStatus } = useProviderKeyStatus();
 	const [showSlowLoadFallback, setShowSlowLoadFallback] = useState(false);
 	const [electricSyncError, setElectricSyncError] = useState<string | null>(
 		null,
@@ -749,7 +749,7 @@ export function ChatView({
 								defaultProvider={resolvedDefaultProvider}
 								placeholder="Send a follow-up message..."
 								configuredKeys={configuredKeys}
-								oauthConnected={oauthConnected}
+								oauthStatus={oauthStatus}
 							/>
 						</div>
 					)}

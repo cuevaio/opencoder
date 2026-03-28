@@ -39,6 +39,12 @@ interface OpenAIOAuthStatus {
 	lastError: string | null;
 }
 
+interface CopilotStatus {
+	connected: boolean;
+	updatedAt: string | null;
+	lastError: string | null;
+}
+
 const providerLabels: Record<KeyProviderId, string> = {
 	openai: "OpenAI",
 	anthropic: "Anthropic",
@@ -73,6 +79,12 @@ function DashboardPage() {
 	const [oauthBusy, setOauthBusy] = useState(false);
 	const [oauthError, setOauthError] = useState<string | null>(null);
 	const [oauthNotice, setOauthNotice] = useState<string | null>(null);
+	const [copilotStatus, setCopilotStatus] = useState<CopilotStatus | null>(
+		null,
+	);
+	const [copilotBusy, setCopilotBusy] = useState(false);
+	const [copilotError, setCopilotError] = useState<string | null>(null);
+	const [copilotNotice, setCopilotNotice] = useState<string | null>(null);
 
 	const loadKeys = useCallback(async () => {
 		setLoadingKeys(true);
@@ -116,10 +128,33 @@ function DashboardPage() {
 		}
 	}, []);
 
+	const loadCopilotStatus = useCallback(async () => {
+		setCopilotError(null);
+		try {
+			const response = await fetch("/api/agent/oauth/copilot/status");
+			const payload = (await response.json()) as CopilotStatus & {
+				error?: string;
+			};
+			if (!response.ok) {
+				throw new Error(
+					payload.error || "Failed to load GitHub Copilot status",
+				);
+			}
+			setCopilotStatus(payload);
+		} catch (error) {
+			setCopilotError(
+				error instanceof Error
+					? error.message
+					: "Failed to load GitHub Copilot status",
+			);
+		}
+	}, []);
+
 	useEffect(() => {
 		loadKeys();
 		loadOauthStatus();
-	}, [loadKeys, loadOauthStatus]);
+		loadCopilotStatus();
+	}, [loadKeys, loadOauthStatus, loadCopilotStatus]);
 
 	const handleConnectSubscription = useCallback(async () => {
 		setOauthBusy(true);
@@ -226,6 +261,120 @@ function DashboardPage() {
 			);
 		} finally {
 			setOauthBusy(false);
+		}
+	}, []);
+
+	const handleConnectCopilot = useCallback(async () => {
+		setCopilotBusy(true);
+		setCopilotError(null);
+		setCopilotNotice(null);
+		try {
+			const startResponse = await fetch("/api/agent/oauth/copilot/start", {
+				method: "POST",
+			});
+			const startPayload = (await startResponse.json()) as {
+				pendingId?: string;
+				verificationUrl?: string;
+				userCode?: string;
+				intervalMs?: number;
+				error?: string;
+			};
+
+			if (!startResponse.ok || !startPayload.pendingId) {
+				throw new Error(
+					startPayload.error || "Failed to start GitHub Copilot authorization",
+				);
+			}
+
+			if (startPayload.verificationUrl) {
+				window.open(
+					startPayload.verificationUrl,
+					"_blank",
+					"noopener,noreferrer",
+				);
+			}
+
+			setCopilotNotice(
+				startPayload.userCode
+					? `Enter code ${startPayload.userCode} on GitHub to finish linking Copilot.`
+					: "Complete GitHub Copilot authorization in the new window.",
+			);
+
+			const pollMs = Math.max(startPayload.intervalMs ?? 5000, 1000);
+			const deadline = Date.now() + 10 * 60 * 1000;
+			while (Date.now() < deadline) {
+				await new Promise((resolve) => setTimeout(resolve, pollMs));
+				const pollResponse = await fetch("/api/agent/oauth/copilot/poll", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ pendingId: startPayload.pendingId }),
+				});
+				const pollPayload = (await pollResponse.json()) as {
+					status?: "pending" | "connected" | "failed" | "expired";
+					intervalMs?: number;
+					error?: string;
+				};
+
+				if (!pollResponse.ok) {
+					throw new Error(
+						pollPayload.error || "GitHub Copilot authorization failed",
+					);
+				}
+
+				if (pollPayload.status === "connected") {
+					await loadCopilotStatus();
+					setCopilotNotice("GitHub Copilot connected.");
+					return;
+				}
+
+				if (
+					pollPayload.status === "failed" ||
+					pollPayload.status === "expired"
+				) {
+					throw new Error(
+						pollPayload.error || "GitHub Copilot authorization failed",
+					);
+				}
+			}
+
+			throw new Error(
+				"GitHub Copilot authorization timed out. Please try again.",
+			);
+		} catch (error) {
+			setCopilotError(
+				error instanceof Error
+					? error.message
+					: "Failed to connect GitHub Copilot",
+			);
+		} finally {
+			setCopilotBusy(false);
+		}
+	}, [loadCopilotStatus]);
+
+	const handleDisconnectCopilot = useCallback(async () => {
+		setCopilotBusy(true);
+		setCopilotError(null);
+		setCopilotNotice(null);
+		try {
+			const response = await fetch("/api/agent/oauth/copilot/disconnect", {
+				method: "DELETE",
+			});
+			const payload = (await response.json()) as CopilotStatus & {
+				error?: string;
+			};
+			if (!response.ok) {
+				throw new Error(payload.error || "Failed to disconnect GitHub Copilot");
+			}
+			setCopilotStatus(payload);
+			setCopilotNotice("GitHub Copilot disconnected.");
+		} catch (error) {
+			setCopilotError(
+				error instanceof Error
+					? error.message
+					: "Failed to disconnect GitHub Copilot",
+			);
+		} finally {
+			setCopilotBusy(false);
 		}
 	}, []);
 
@@ -438,6 +587,75 @@ function DashboardPage() {
 					{oauthError && (
 						<div className="mt-3 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
 							{oauthError}
+						</div>
+					)}
+				</div>
+
+				<div className="mt-4 rounded-xl border border-border/80 bg-surface-1 p-5 sm:p-6">
+					<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+						<div>
+							<h2 className="font-semibold">GitHub Copilot</h2>
+							<p className="mt-0.5 text-sm text-muted-foreground">
+								Connect your Copilot subscription via GitHub device login.
+							</p>
+							{copilotStatus?.updatedAt && (
+								<p className="mt-1 text-xs text-muted-foreground">
+									Last updated:{" "}
+									{new Date(copilotStatus.updatedAt).toLocaleString()}
+								</p>
+							)}
+							{copilotStatus?.lastError && (
+								<p className="mt-1 text-xs text-muted-foreground">
+									{copilotStatus.lastError}
+								</p>
+							)}
+						</div>
+						<div className="flex shrink-0 items-center gap-2">
+							<span
+								className={`inline-block h-2 w-2 rounded-full ${copilotStatus?.connected ? "bg-green-500" : "bg-muted-foreground/40"}`}
+							/>
+							<span className="text-sm">
+								{copilotStatus?.connected ? "Connected" : "Not connected"}
+							</span>
+						</div>
+					</div>
+					<div className="mt-4 flex flex-wrap gap-2">
+						{copilotStatus?.connected ? (
+							<button
+								type="button"
+								onClick={handleDisconnectCopilot}
+								disabled={copilotBusy}
+								className="min-h-[44px] rounded-md border border-border bg-background/70 px-4 py-2.5 text-sm text-muted-foreground hover:bg-muted disabled:opacity-50"
+							>
+								{copilotBusy ? "Disconnecting…" : "Disconnect"}
+							</button>
+						) : (
+							<button
+								type="button"
+								onClick={handleConnectCopilot}
+								disabled={copilotBusy}
+								className="min-h-[44px] rounded-md bg-foreground px-4 py-2.5 text-sm font-medium text-background hover:opacity-90 press-scale disabled:opacity-50"
+							>
+								{copilotBusy ? "Connecting…" : "Connect GitHub Copilot"}
+							</button>
+						)}
+						<button
+							type="button"
+							onClick={loadCopilotStatus}
+							disabled={copilotBusy}
+							className="min-h-[44px] rounded-md border border-border bg-background/70 px-4 py-2.5 text-sm text-muted-foreground hover:bg-muted disabled:opacity-50"
+						>
+							Refresh
+						</button>
+					</div>
+					{copilotNotice && (
+						<p className="mt-3 text-sm text-muted-foreground">
+							{copilotNotice}
+						</p>
+					)}
+					{copilotError && (
+						<div className="mt-3 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
+							{copilotError}
 						</div>
 					)}
 				</div>

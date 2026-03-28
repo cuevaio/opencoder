@@ -70,7 +70,7 @@ function resolveValidProvider(
 	if (!modelOption) return undefined;
 
 	const candidates = getCompatibleProviders(
-		modelOption.family,
+		modelOption.id,
 		configuredKeys,
 		oauthStatus,
 	);

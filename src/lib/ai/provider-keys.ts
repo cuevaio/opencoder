@@ -7,8 +7,13 @@ import {
 	maskSecret,
 } from "#/lib/server/encryption.ts";
 import type { KeyProviderId, SelectedProvider } from "./model-registry.ts";
-import { getModelOption } from "./model-registry.ts";
-import { getOpenAIOAuthAuth, hasOpenAIOAuth } from "./provider-oauth.ts";
+import { getModelOption, providerSupportsModel } from "./model-registry.ts";
+import {
+	getGitHubCopilotOAuthAuth,
+	getOpenAIOAuthAuth,
+	hasGitHubCopilotOAuth,
+	hasOpenAIOAuth,
+} from "./provider-oauth.ts";
 
 interface ProviderKeyRow {
 	provider: KeyProviderId;
@@ -29,7 +34,7 @@ export interface ProviderKeyStatus {
 }
 
 export interface ResolvedModelExecution {
-	providerID: KeyProviderId;
+	providerID: KeyProviderId | "github-copilot";
 	modelID: string;
 	fullModel: string;
 	auth:
@@ -139,6 +144,7 @@ export async function deleteProviderKey(
 export async function canExecuteModel(
 	userId: string,
 	modelId: string,
+	selectedProvider?: SelectedProvider,
 ): Promise<{ ok: true } | { ok: false; message: string }> {
 	const model = getModelOption(modelId);
 	if (!model) {
@@ -147,19 +153,84 @@ export async function canExecuteModel(
 
 	const keyMap = await getProviderKeyMapForUser(userId);
 	const hasOpenAIOauth = await hasOpenAIOAuth(userId);
-	if (model.family === "openai") {
-		if (hasOpenAIOauth || keyMap.openai || keyMap.vercel) return { ok: true };
+	const hasCopilotOauth = await hasGitHubCopilotOAuth(userId);
+
+	if (selectedProvider && !providerSupportsModel(selectedProvider, model.id)) {
 		return {
 			ok: false,
-			message:
-				"This model needs an OpenAI subscription connection, OpenAI API key, or AI Gateway API key.",
+			message: `Provider ${selectedProvider} does not support model ${model.id}.`,
 		};
 	}
 
-	if (keyMap.anthropic || keyMap.vercel) return { ok: true };
+	if (selectedProvider === "github-copilot") {
+		if (hasCopilotOauth) return { ok: true };
+		return {
+			ok: false,
+			message:
+				"GitHub Copilot is not connected. Connect it in Dashboard and complete GitHub device login.",
+		};
+	}
+
+	if (selectedProvider === "openai-oauth") {
+		if (hasOpenAIOauth) return { ok: true };
+		return {
+			ok: false,
+			message:
+				"ChatGPT subscription is not connected. Connect it in Dashboard.",
+		};
+	}
+
+	if (selectedProvider === "openai-key") {
+		if (keyMap.openai) return { ok: true };
+		return {
+			ok: false,
+			message: "OpenAI API key is not configured. Add one in Dashboard.",
+		};
+	}
+
+	if (selectedProvider === "anthropic-key") {
+		if (keyMap.anthropic) return { ok: true };
+		return {
+			ok: false,
+			message: "Anthropic API key is not configured. Add one in Dashboard.",
+		};
+	}
+
+	if (selectedProvider === "vercel") {
+		if (keyMap.vercel) return { ok: true };
+		return {
+			ok: false,
+			message: "AI Gateway key is not configured. Add one in Dashboard.",
+		};
+	}
+
+	if (model.family === "openai") {
+		if (
+			(providerSupportsModel("openai-oauth", model.id) && hasOpenAIOauth) ||
+			(providerSupportsModel("github-copilot", model.id) && hasCopilotOauth) ||
+			(providerSupportsModel("openai-key", model.id) && !!keyMap.openai) ||
+			(providerSupportsModel("vercel", model.id) && !!keyMap.vercel)
+		)
+			return { ok: true };
+		return {
+			ok: false,
+			message:
+				"This model needs ChatGPT subscription, GitHub Copilot connection, OpenAI API key, or AI Gateway API key.",
+		};
+	}
+
+	if (
+		(providerSupportsModel("github-copilot", model.id) && hasCopilotOauth) ||
+		(providerSupportsModel("anthropic-key", model.id) && !!keyMap.anthropic) ||
+		(providerSupportsModel("vercel", model.id) && !!keyMap.vercel)
+	)
+		return { ok: true };
+
 	return {
 		ok: false,
-		message: "This model needs an Anthropic API key or an AI Gateway API key.",
+		message: providerSupportsModel("github-copilot", model.id)
+			? "This model needs GitHub Copilot connection, Anthropic API key, or AI Gateway API key."
+			: "This model needs an Anthropic API key or an AI Gateway API key.",
 	};
 }
 
@@ -175,11 +246,33 @@ export async function resolveModelExecution(
 
 	const keyMap = await getProviderKeyMapForUser(userId);
 
+	if (selectedProvider && !providerSupportsModel(selectedProvider, model.id)) {
+		throw new Error(
+			`Provider ${selectedProvider} does not support model ${model.id}.`,
+		);
+	}
+
 	// ─── Explicit provider selection ───────────────────────────────────────────
 	// When the user has explicitly chosen a provider, honour it strictly.
 	// Throw a clear error if the chosen credential is not configured — never
 	// silently fall through to a different provider (e.g. OAuth instead of key).
 	if (selectedProvider) {
+		if (selectedProvider === "github-copilot") {
+			const copilotAuth = await getGitHubCopilotOAuthAuth(userId);
+			if (!copilotAuth) {
+				throw new Error(
+					"GitHub Copilot is not connected. Connect it in Dashboard and complete GitHub device login.",
+				);
+			}
+
+			return {
+				providerID: "github-copilot",
+				modelID: model.id,
+				fullModel: `github-copilot/${model.id}`,
+				auth: copilotAuth,
+			};
+		}
+
 		if (selectedProvider === "openai-oauth" && model.family === "openai") {
 			const oauth = await getOpenAIOAuthAuth(userId);
 			if (!oauth) {
@@ -265,7 +358,7 @@ export async function resolveModelExecution(
 
 	if (model.family === "openai") {
 		const oauth = await getOpenAIOAuthAuth(userId);
-		if (oauth) {
+		if (oauth && providerSupportsModel("openai-oauth", model.id)) {
 			return {
 				providerID: "openai",
 				modelID: model.id,
@@ -274,7 +367,17 @@ export async function resolveModelExecution(
 			};
 		}
 
-		if (keyMap.openai) {
+		const copilot = await getGitHubCopilotOAuthAuth(userId);
+		if (copilot && providerSupportsModel("github-copilot", model.id)) {
+			return {
+				providerID: "github-copilot",
+				modelID: model.id,
+				fullModel: `github-copilot/${model.id}`,
+				auth: copilot,
+			};
+		}
+
+		if (keyMap.openai && providerSupportsModel("openai-key", model.id)) {
 			return {
 				providerID: "openai",
 				modelID: model.id,
@@ -290,7 +393,7 @@ export async function resolveModelExecution(
 			};
 		}
 
-		if (keyMap.vercel) {
+		if (keyMap.vercel && providerSupportsModel("vercel", model.id)) {
 			return {
 				providerID: "vercel",
 				modelID: `openai/${model.id}`,
@@ -311,7 +414,17 @@ export async function resolveModelExecution(
 		);
 	}
 
-	if (keyMap.anthropic) {
+	const copilot = await getGitHubCopilotOAuthAuth(userId);
+	if (copilot && providerSupportsModel("github-copilot", model.id)) {
+		return {
+			providerID: "github-copilot",
+			modelID: model.id,
+			fullModel: `github-copilot/${model.id}`,
+			auth: copilot,
+		};
+	}
+
+	if (keyMap.anthropic && providerSupportsModel("anthropic-key", model.id)) {
 		return {
 			providerID: "anthropic",
 			modelID: model.id,
@@ -327,7 +440,7 @@ export async function resolveModelExecution(
 		};
 	}
 
-	if (keyMap.vercel) {
+	if (keyMap.vercel && providerSupportsModel("vercel", model.id)) {
 		return {
 			providerID: "vercel",
 			modelID: `anthropic/${model.id}`,
@@ -344,6 +457,8 @@ export async function resolveModelExecution(
 	}
 
 	throw new Error(
-		"No compatible API key found. Add an Anthropic or AI Gateway key in Dashboard.",
+		providerSupportsModel("github-copilot", model.id)
+			? "No compatible credential found. Connect GitHub Copilot or add an Anthropic/AI Gateway key in Dashboard."
+			: "No compatible API key found. Add an Anthropic or AI Gateway key in Dashboard.",
 	);
 }

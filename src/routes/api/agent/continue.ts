@@ -146,7 +146,7 @@ export const Route = createFileRoute("/api/agent/continue")({
 					: isValidSelectedProvider(session.selectedProvider)
 						? session.selectedProvider
 						: undefined;
-				const modelCheck = await canExecuteModel(userId, model);
+				const modelCheck = await canExecuteModel(userId, model, provider);
 				if (!modelCheck.ok) {
 					return Response.json({ error: modelCheck.message }, { status: 400 });
 				}

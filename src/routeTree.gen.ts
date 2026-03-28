@@ -36,6 +36,10 @@ import { Route as ApiAgentOauthOpenaiStatusRouteImport } from './routes/api/agen
 import { Route as ApiAgentOauthOpenaiStartRouteImport } from './routes/api/agent/oauth/openai/start'
 import { Route as ApiAgentOauthOpenaiPollRouteImport } from './routes/api/agent/oauth/openai/poll'
 import { Route as ApiAgentOauthOpenaiDisconnectRouteImport } from './routes/api/agent/oauth/openai/disconnect'
+import { Route as ApiAgentOauthCopilotStatusRouteImport } from './routes/api/agent/oauth/copilot/status'
+import { Route as ApiAgentOauthCopilotStartRouteImport } from './routes/api/agent/oauth/copilot/start'
+import { Route as ApiAgentOauthCopilotPollRouteImport } from './routes/api/agent/oauth/copilot/poll'
+import { Route as ApiAgentOauthCopilotDisconnectRouteImport } from './routes/api/agent/oauth/copilot/disconnect'
 
 const SignInRoute = SignInRouteImport.update({
   id: '/sign-in',
@@ -176,6 +180,30 @@ const ApiAgentOauthOpenaiDisconnectRoute =
     path: '/api/agent/oauth/openai/disconnect',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiAgentOauthCopilotStatusRoute =
+  ApiAgentOauthCopilotStatusRouteImport.update({
+    id: '/api/agent/oauth/copilot/status',
+    path: '/api/agent/oauth/copilot/status',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiAgentOauthCopilotStartRoute =
+  ApiAgentOauthCopilotStartRouteImport.update({
+    id: '/api/agent/oauth/copilot/start',
+    path: '/api/agent/oauth/copilot/start',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiAgentOauthCopilotPollRoute =
+  ApiAgentOauthCopilotPollRouteImport.update({
+    id: '/api/agent/oauth/copilot/poll',
+    path: '/api/agent/oauth/copilot/poll',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiAgentOauthCopilotDisconnectRoute =
+  ApiAgentOauthCopilotDisconnectRouteImport.update({
+    id: '/api/agent/oauth/copilot/disconnect',
+    path: '/api/agent/oauth/copilot/disconnect',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -199,6 +227,10 @@ export interface FileRoutesByFullPath {
   '/api/webhook/github': typeof ApiWebhookGithubRoute
   '/chat/': typeof AuthedChatIndexRoute
   '/api/agent/sessions/$id': typeof ApiAgentSessionsIdRouteWithChildren
+  '/api/agent/oauth/copilot/disconnect': typeof ApiAgentOauthCopilotDisconnectRoute
+  '/api/agent/oauth/copilot/poll': typeof ApiAgentOauthCopilotPollRoute
+  '/api/agent/oauth/copilot/start': typeof ApiAgentOauthCopilotStartRoute
+  '/api/agent/oauth/copilot/status': typeof ApiAgentOauthCopilotStatusRoute
   '/api/agent/oauth/openai/disconnect': typeof ApiAgentOauthOpenaiDisconnectRoute
   '/api/agent/oauth/openai/poll': typeof ApiAgentOauthOpenaiPollRoute
   '/api/agent/oauth/openai/start': typeof ApiAgentOauthOpenaiStartRoute
@@ -226,6 +258,10 @@ export interface FileRoutesByTo {
   '/api/webhook/github': typeof ApiWebhookGithubRoute
   '/chat': typeof AuthedChatIndexRoute
   '/api/agent/sessions/$id': typeof ApiAgentSessionsIdRouteWithChildren
+  '/api/agent/oauth/copilot/disconnect': typeof ApiAgentOauthCopilotDisconnectRoute
+  '/api/agent/oauth/copilot/poll': typeof ApiAgentOauthCopilotPollRoute
+  '/api/agent/oauth/copilot/start': typeof ApiAgentOauthCopilotStartRoute
+  '/api/agent/oauth/copilot/status': typeof ApiAgentOauthCopilotStatusRoute
   '/api/agent/oauth/openai/disconnect': typeof ApiAgentOauthOpenaiDisconnectRoute
   '/api/agent/oauth/openai/poll': typeof ApiAgentOauthOpenaiPollRoute
   '/api/agent/oauth/openai/start': typeof ApiAgentOauthOpenaiStartRoute
@@ -256,6 +292,10 @@ export interface FileRoutesById {
   '/api/webhook/github': typeof ApiWebhookGithubRoute
   '/_authed/chat/': typeof AuthedChatIndexRoute
   '/api/agent/sessions/$id': typeof ApiAgentSessionsIdRouteWithChildren
+  '/api/agent/oauth/copilot/disconnect': typeof ApiAgentOauthCopilotDisconnectRoute
+  '/api/agent/oauth/copilot/poll': typeof ApiAgentOauthCopilotPollRoute
+  '/api/agent/oauth/copilot/start': typeof ApiAgentOauthCopilotStartRoute
+  '/api/agent/oauth/copilot/status': typeof ApiAgentOauthCopilotStatusRoute
   '/api/agent/oauth/openai/disconnect': typeof ApiAgentOauthOpenaiDisconnectRoute
   '/api/agent/oauth/openai/poll': typeof ApiAgentOauthOpenaiPollRoute
   '/api/agent/oauth/openai/start': typeof ApiAgentOauthOpenaiStartRoute
@@ -286,6 +326,10 @@ export interface FileRouteTypes {
     | '/api/webhook/github'
     | '/chat/'
     | '/api/agent/sessions/$id'
+    | '/api/agent/oauth/copilot/disconnect'
+    | '/api/agent/oauth/copilot/poll'
+    | '/api/agent/oauth/copilot/start'
+    | '/api/agent/oauth/copilot/status'
     | '/api/agent/oauth/openai/disconnect'
     | '/api/agent/oauth/openai/poll'
     | '/api/agent/oauth/openai/start'
@@ -313,6 +357,10 @@ export interface FileRouteTypes {
     | '/api/webhook/github'
     | '/chat'
     | '/api/agent/sessions/$id'
+    | '/api/agent/oauth/copilot/disconnect'
+    | '/api/agent/oauth/copilot/poll'
+    | '/api/agent/oauth/copilot/start'
+    | '/api/agent/oauth/copilot/status'
     | '/api/agent/oauth/openai/disconnect'
     | '/api/agent/oauth/openai/poll'
     | '/api/agent/oauth/openai/start'
@@ -342,6 +390,10 @@ export interface FileRouteTypes {
     | '/api/webhook/github'
     | '/_authed/chat/'
     | '/api/agent/sessions/$id'
+    | '/api/agent/oauth/copilot/disconnect'
+    | '/api/agent/oauth/copilot/poll'
+    | '/api/agent/oauth/copilot/start'
+    | '/api/agent/oauth/copilot/status'
     | '/api/agent/oauth/openai/disconnect'
     | '/api/agent/oauth/openai/poll'
     | '/api/agent/oauth/openai/start'
@@ -367,6 +419,10 @@ export interface RootRouteChildren {
   ApiShapesSessionsRoute: typeof ApiShapesSessionsRoute
   ApiUploadImageRoute: typeof ApiUploadImageRoute
   ApiWebhookGithubRoute: typeof ApiWebhookGithubRoute
+  ApiAgentOauthCopilotDisconnectRoute: typeof ApiAgentOauthCopilotDisconnectRoute
+  ApiAgentOauthCopilotPollRoute: typeof ApiAgentOauthCopilotPollRoute
+  ApiAgentOauthCopilotStartRoute: typeof ApiAgentOauthCopilotStartRoute
+  ApiAgentOauthCopilotStatusRoute: typeof ApiAgentOauthCopilotStatusRoute
   ApiAgentOauthOpenaiDisconnectRoute: typeof ApiAgentOauthOpenaiDisconnectRoute
   ApiAgentOauthOpenaiPollRoute: typeof ApiAgentOauthOpenaiPollRoute
   ApiAgentOauthOpenaiStartRoute: typeof ApiAgentOauthOpenaiStartRoute
@@ -564,6 +620,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAgentOauthOpenaiDisconnectRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/agent/oauth/copilot/status': {
+      id: '/api/agent/oauth/copilot/status'
+      path: '/api/agent/oauth/copilot/status'
+      fullPath: '/api/agent/oauth/copilot/status'
+      preLoaderRoute: typeof ApiAgentOauthCopilotStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/agent/oauth/copilot/start': {
+      id: '/api/agent/oauth/copilot/start'
+      path: '/api/agent/oauth/copilot/start'
+      fullPath: '/api/agent/oauth/copilot/start'
+      preLoaderRoute: typeof ApiAgentOauthCopilotStartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/agent/oauth/copilot/poll': {
+      id: '/api/agent/oauth/copilot/poll'
+      path: '/api/agent/oauth/copilot/poll'
+      fullPath: '/api/agent/oauth/copilot/poll'
+      preLoaderRoute: typeof ApiAgentOauthCopilotPollRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/agent/oauth/copilot/disconnect': {
+      id: '/api/agent/oauth/copilot/disconnect'
+      path: '/api/agent/oauth/copilot/disconnect'
+      fullPath: '/api/agent/oauth/copilot/disconnect'
+      preLoaderRoute: typeof ApiAgentOauthCopilotDisconnectRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -634,6 +718,10 @@ const rootRouteChildren: RootRouteChildren = {
   ApiShapesSessionsRoute: ApiShapesSessionsRoute,
   ApiUploadImageRoute: ApiUploadImageRoute,
   ApiWebhookGithubRoute: ApiWebhookGithubRoute,
+  ApiAgentOauthCopilotDisconnectRoute: ApiAgentOauthCopilotDisconnectRoute,
+  ApiAgentOauthCopilotPollRoute: ApiAgentOauthCopilotPollRoute,
+  ApiAgentOauthCopilotStartRoute: ApiAgentOauthCopilotStartRoute,
+  ApiAgentOauthCopilotStatusRoute: ApiAgentOauthCopilotStatusRoute,
   ApiAgentOauthOpenaiDisconnectRoute: ApiAgentOauthOpenaiDisconnectRoute,
   ApiAgentOauthOpenaiPollRoute: ApiAgentOauthOpenaiPollRoute,
   ApiAgentOauthOpenaiStartRoute: ApiAgentOauthOpenaiStartRoute,

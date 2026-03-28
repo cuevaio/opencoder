@@ -91,9 +91,11 @@ type ResolvedAuth =
  * refreshes internally, so a failure here is not fatal.
  */
 export async function refreshOAuthTokenIfNeeded(
+	providerID: "openai" | "anthropic" | "vercel" | "github-copilot",
 	auth: ResolvedAuth,
 ): Promise<void> {
 	if (auth.type !== "oauth") return;
+	if (providerID !== "openai") return;
 	if (auth.access && auth.expires >= Date.now() + 30_000) return;
 
 	logger.info("OAuth access token expired — refreshing before session start");
@@ -130,7 +132,7 @@ export async function refreshOAuthTokenIfNeeded(
 
 export async function authenticateOpenCode(
 	client: OpenCodeInstance["client"],
-	providerID: "openai" | "anthropic" | "vercel",
+	providerID: "openai" | "anthropic" | "vercel" | "github-copilot",
 	auth: ResolvedAuth,
 ): Promise<void> {
 	await client.auth.set({
